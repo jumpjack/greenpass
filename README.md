@@ -4,7 +4,7 @@
  -  Main page: <a href="http://jumpjack.altervista.org/greenpass/">link</a>
  - Test page for developers (only console output): <a href="https://jumpjack.altervista.org/greenpass/mini.html">link</a>
 
-With this tool you can decode, view and understand all the data actually contained in your greenpass/QR, which are instead not visible using the standard app to check green pass validity, but you can't validate (i.e. verify if QR is valid and legal), this function is not implemented; but the script exposes variables** headers1, headers2, cbor_data,** and  **signature**; greenpass JSON data are in **cbor_data**, the other variables are for validation.
+With this tool you can decode, view and understand all the data actually contained in your greenpass/QR, which are instead not visible using the standard app to check green pass validity, but you can't validate (i.e. verify if QR is valid and legal), this function is not implemented; but the script exposes variables **headers1, headers2, cbor_data,** and  **signature**; greenpass JSON data are in **cbor_data**, the other variables are for validation.
 
 You don't need to upload your QR code to any site, all processing is performed offline: just drag the QR code on the specified page, or paste the string resulting from QR code reading by any app, then click a button and see all your data.
 
