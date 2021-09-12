@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="PSPad editor, www.pspad.com">
+  <title></title>
+  </head>
+  <body>
+  <textarea id="encoded" name="encoded" cols=100 rows=10></textarea><br>
+  <textarea id="decoded" name="decoded" cols=100 rows=10 value = "prova">hello</textarea><br>
+  <span id="plain1" name="plain1">-</span> --&gt;
+  <span id ="cod" name="cod">-</span> --&gt;
+  <span id="plain2" name="plain2">-</span><br>
+  <button onclick="test()">Test</button><br>
+  <button onclick="vai()">Vai</button><br>
+  <script src="pako.min.js"></script>
+  <script src="my_base45_2.js"></script>
+  <script src="cbor.js" type="text/javascript"></script>
+
+<script>
+
+// https://dev.to/lmillucci/javascript-how-to-decode-the-greenpass-qr-code-3dh0
+
+function convert(decoded) {
+    text="";
+    for (var i = 0; i < decoded.length; i++) {
+        text +=  String.fromCharCode(decoded[i]);
+    }
+    console.log("Text=",text);
+    values = text.split(",");
+    console.log("values: " ,values);
+    final = "";
+    for (var i=0; i<values.length; i++) {
+        final += String.fromCharCode(values[i])
+    }
+    return final;
+}
+
+function test() {
+
+    source = document.getElementById("decoded").value;
+    console.log("source=",source);
+    document.getElementById("plain1").innerHTML = source;
+
+    var enc = new TextEncoder();
+    buff= enc.encode(source);
+    console.log("buff:" , buff);
+
+    encoded2 = encode(buff);
+    console.log("encoded2:" , encoded2);
+    document.getElementById("cod").innerHTML = encoded2;
+
+    source = encoded2;
+    console.log("Encoded source=",source);
+    decoded = decode(source).enc;
+    converted = convert(decoded);
+
+    console.log("Decoded=", decoded);
+    console.log("converted=", converted);
+
+    document.getElementById("plain2").innerHTML = converted;
+}
+
+
+function buf2hex(buffer) {
+// https://stackoverflow.com/questions/34309988/byte-array-to-hex-string-conversion-in-javascript
+    var u = new Uint8Array(buffer),
+        a = new Array(u.length),
+        i = u.length;
+    while (i--) // map to hex
+        a[i] = (u[i] < 16 ? '0' : '') + u[i].toString(16);
+    u = null; // free memory
+    return a.join('');
+};
+
+
+function typedArrayToBuffer(array) {
+// https://stackoverflow.com/questions/37228285/uint8array-to-arraybuffer
+    return array.buffer.slice(array.byteOffset, array.byteLength + array.byteOffset)
+}
+
+
+function vai() {
+    source = document.getElementById("encoded").value;
+    console.log("Encoded source=",source);
+
+    // Decode BASE45:
+    decoded = decode(source).enc;
+
+    // Unzip the decoded:
+    COSEbin =  pako.inflate(decode(source).raw);
+		COSE = buf2hex(COSEbin);
+
+		var typedArray = new Uint8Array(COSE.match(/[\da-f]{2}/gi).map(function (h) {
+		  return parseInt(h, 16)
+		})) // https://stackoverflow.com/questions/43131242/how-to-convert-a-hexadecimal-string-of-data-to-an-arraybuffer-in-javascript
+		var unzipped = typedArray.buffer;
+
+		[headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);
+		cbor_dataArr = typedArrayToBuffer(cbor_data);
+		greenpassData  = CBOR.decode(cbor_dataArr);
+
+		console.log(greenpassData);
+}
+</script>
+  </body>
+</html>

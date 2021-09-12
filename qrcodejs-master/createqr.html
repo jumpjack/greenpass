@@ -1,0 +1,131 @@
+
+<html>
+<head>
+  <meta name="description" content="QRCode Creator" />
+  <meta name="keywords" content="qrcode,qr code,scanner,barcode,javascript,nfc" />
+  <meta name="language" content="English" />
+  <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QR Code Creator Demo</title>
+
+<style type="text/css">
+body{
+    width:100%;
+    text-align:center;
+}
+img{
+    border:0;
+}
+#main{
+    margin: 15px auto;
+    background:white;
+    overflow: auto;
+	width: 750px;
+}
+#header{
+    background:white;
+}
+#mainbody{
+    background: white;
+    width:100%;
+}
+#footer{
+    background:white;
+}
+#mp1{
+    text-align:center;
+    font-size:35px;
+}
+#header ul{
+    margin-bottom:0;
+    margin-right:40px;
+}
+#header li{
+    display:inline;
+    padding-right: 0.5em;
+    padding-left: 0.5em;
+    font-weight: bold;
+    border-right: 1px solid #333333;
+}
+#header li a{
+    text-decoration: none;
+    color: black;
+}
+p.quote1{
+    
+    font-weight:bold;
+    margin-left:10%;
+    margin-right:10%;
+    color: black;
+}
+a{
+	color: black;
+}
+
+div.button{
+    border: 2px solid #333333;;
+    border-radius:15px;
+    width:100px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+</style>
+<script type="text/javascript" src="js/qrcode.min.js"></script>
+</head>
+
+<body >
+<div id="main">
+<div id="header">
+<p id="mp1">
+QR Code scanner
+</p>
+<ul>
+<li><a href="decodeqr.html">Scan</a></li>
+<li><a href="createqr.html">Create</a></li>
+</ul>
+</div>
+<div id="mainbody">
+<p style="font-size:25px;text-align:center;">Create QR Code</p>
+<table border="0" align="center">
+<tr><td>
+<p style="font-size:20px;text-align:center;">Enter URL or text:</p>
+<textarea cols="40" rows="3" id="data" placeholder="sample text for which QR code will be generated"></textarea>
+</td></tr>
+<tr><td align="center">
+<div class="button" onclick="create()">Create</div>
+</td></tr>
+<tr><td align="center">
+<div id="qrimage">
+</div>
+</td></tr>
+
+</table>
+</div>
+<div id="footer">
+<br>
+</div>
+</div>
+<script type="text/javascript">
+
+var qrcode = new QRCode("qrimage", {
+    text: "sample text for which QR code will be drawn",
+    width: 128,
+    height: 128,
+    colorDark : "#000000",
+    colorLight : "#ffffff",
+    correctLevel : QRCode.CorrectLevel.H
+});
+
+function create()
+{
+   var data=document.getElementById("data").value;
+   qrcode.clear(); // clear the code.
+   qrcode.makeCode(data);
+}
+
+</script>
+</body>
+
+</html>
+

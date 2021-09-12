@@ -1,0 +1,472 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="PSPad editor, www.pspad.com">
+  <title>Greenpass pure javascript decoder in browser</title>
+  </head>
+  <body>
+
+<center><big><big>Greenpass pure javascript decoder in browser</big></big><br>
+v. 1.0.0<br>
+</center><br>
+<br>
+<br>
+1) Save this page locally to your PC, to be sure you are not sending your QrCode/Green pass to any site;<br>
+2) Read your QR code with any QR reader:<br>
+ 2a) By smartphone: download a QR decoder app and point camera at your QR code<br>
+ 2b) By PC:<br>
+     - open <a href="qrcodejs-master/decodeqr.html" target="#">decodeqr.html</a> file in another page (<a href="https://github.com/klonikar/qrcodejs">source</a>)<br>
+		 - click on Camera icon <img src="qrcodejs-master/img/cam.png" wisth=10 height=20> on that page<br>
+		 - drag your QR code file to the decoding; you can try with <a href="greenpass-demo.png">this test image</a> before (<a href="">source</a>)<br>
+Both on smartphone or PC you should get a sequence of characters starting by "HC1:"<br>
+3) Paste the resulting string here below and click  button.<br>
+<br>
+<textarea id="raw" name="raw" cols=150 rows=6>Paste here your QR code</textarea><br>
+<button onclick="controlla()">Check</button><br>
+<br>
+<br>
+
+<textarea id="rawjson" name="rawjson" cols=100 rows=35></textarea><br>
+<br>
+<br>
+
+Nome: <b><span id="firstname" name="firstname"></span></b><br>
+Cognome: <b><span id="surname" name="surname"></span></b><br>
+Nato il  <b><span id="birth" name="birth"></span></b><br>
+<br>
+Certificato di tampone: <b><span id="tested" name="tested"></span></b><br>
+Certificato di guarigione: <b><span id="covidend" name="covidend"></span></b><br>
+Certificato di vaccinazione: <b><span id="vaccin" name="vaccin"></span></b><br>
+<br>
+<br>
+Dati tampone:<br>
+Date: <b><span id="testDate" name="testDate"></span></b><br>
+Device: <b><span id="testDevice" name="testDevice"></span></b><br>
+Type: <b><span id="testType" name="testType"></span></b><br>
+Name: <b><span id="testName" name="testName"></span></b><br>
+Country: <b><span id="testCountryTestato" name="testCountryTestato"></span></b><br>
+Center: <b><span id="testCenter" name="testCenter"></span></b><br>
+Id: <b><span id="testCertId" name="testCertId"></span></b><br>
+Issuer: <b><span id="issuerT" name="issuerT"></span></b><br>
+Disease: <b><span id="testDisease" name="testDisease"></span></b><br>
+RESULT: <b><span id="testResult" name="testResult"></span></b><br>
+
+<br>
+Dati guarigione:<br>
+Target desease: <b><span id="targetR" name="targetR"></span></b><br>
+First positive date:  <b><span id="firstPositive" name="firstPositive"></span></b><br>
+Test country: <b><span id="testCountryGuarito" name="testCountryGuarito"></span></b><br>
+Certificate issuer: <b><span id="issuerR" name="issuerR"></span></b><br>
+Valid from: <b><span id="validFromR" name="validFromR"></span></b><br>
+Valid to: <b><span id="validToR" name="validToR"></span></b><br>
+Valid for: <b><span id="validForDaysR" name="validForDaysR"></span></b> days<br>
+Id: <b><span id="certIdR" name="certIdR"></span></b><br>
+<br>
+<br>
+Dati vaccinazione:<br>
+Malattia: <b><span id="targetV" name="targetV"></span></b><br>
+Profilassi: <b><span id="proph" name="proph"></span></b><br>
+ID vaccino: <b><span id="vaccid" name="vaccid"></span></b><br>
+Produttore vaccino: <b><span id="manuf" name="manuf"></span></b><br>
+N. dosi: <b><span id="receivedDoses" name="receivedDoses"></span></b> di <b><span id="neededDoses" name="neededDoses"></span></b><br>
+Giorno vaccinazione <b><span id="vaccinDate" name="vaccinDate"></span></b><br>
+Nazione vaccinazione: <b><span id="nation" name="nation"></span></b><br>
+Emittente certificato: <b><span id="issuerV" name="issuerV"></span></b><br>
+ID certificato: <b><span id="idV" name="idV"></span></b><br>
+<br>
+<br>
+Il QR code e' stato creato il <b><span id="qrdate1" name="qrdate1"></span></b> e
+scade il <b><span id="qrdate2" name="qrdate2"></span></b>.
+quindi vale <b><span id="days" name="days"></span></b> giorni
+(<b><span id="months" name="months"></span></b> mesi).<br>
+Alla scadenza mancano <b><span id="daysleft" name="daysleft"></span></b> giorni
+(<b><span id="monthsleft" name="monthsleft"></span></b> mesi).<br>
+
+	<!-- https://github.com/klonikar/qrcodejs -->
+ 	<!-- file a parte -->
+
+  <script src="pako.min.js"></script>
+	<!-- https://github.com/nodeca/pako/blob/master/dist/pako.min.js -->
+
+  <script src="my_base45_2.js"></script>
+	<!-- https://github.com/dirkx/base45-js/raw/main/lib/base45-js.js -->
+
+	<script src="cbor.js"></script>
+	<!--  https://github.com/paroga/cbor-js/raw/master/cbor.js -->
+
+	<script src="disease-agent-targeted.js"></script>
+	<script src="vaccine-prophylaxis.js"></script>
+	<script src="vaccine-medicinal-product.js"></script>
+	<script src="vaccine-mah-manf.js"></script>
+	<script src="test-result.js"></script>
+	<script src="test-manf.js"></script>
+	<script src="test-type.js"></script>
+	<script src=""></script>
+	<script src=""></script>
+
+<script>
+testData = {
+  "JSON" : {
+    "ver" : "1.0.0",
+    "nam" : {
+      "fn" : "Di Caprio",
+      "fnt" : "DI<CAPRIO",
+      "gn" : "Marilù Teresa",
+      "gnt" : "MARILU<TERESA"
+    },
+    "dob" : "1977-06-16",
+    "v" : [ {
+      "tg" : "840539006",
+      "vp" : "1119349007",
+      "mp" : "EU/1/20/1528",
+      "ma" : "ORG-100030215",
+      "dn" : 2,
+      "sd" : 2,
+      "dt" : "2021-04-10",
+      "co" : "IT",
+      "is" : "IT",
+      "ci" : "01ITE7300E1AB2A84C719004F103DCB1F70A#6"
+    } ]
+  },
+  "CBOR" : "a4617681aa62646e02626d616d4f52472d3130303033303231356276706a313131393334393030376264746a323032312d30342d313062636f62495462636978263031495445373330304531414232413834433731393030344631303344434231463730412336626d706c45552f312f32302f313532386269736249546273640262746769383430353339303036636e616da463666e746944493c43415052494f62666e6944692043617072696f63676e746d4d4152494c553c54455245534162676e6e4d6172696cc3b9205465726573616376657265312e302e3063646f626a313937372d30362d3136",
+  "COSE" : "d2844da2044839301768cdda05130126a0590101a4041a6194e898061a60a78c8801624954390103a101a4617681aa62646e02626d616d4f52472d3130303033303231356276706a313131393334393030376264746a323032312d30342d313062636f62495462636978263031495445373330304531414232413834433731393030344631303344434231463730412336626d706c45552f312f32302f313532386269736249546273640262746769383430353339303036636e616da463666e746944493c43415052494f62666e6944692043617072696f63676e746d4d4152494c553c54455245534162676e6e4d6172696cc3b9205465726573616376657265312e302e3063646f626a313937372d30362d31365840a4ee9016c1a74ccf9caab905492d698f6992a8fa30c20db6180f06040c4870a845bb4b3a1ce3f4ed529cc78e66322547d62637c74ab17919c0aa52a614795e9e",
+  "COMPRESSED" : "789cbbd4e2bb88c5c3d2403ce3ec2d566146b505918c8c4b58a412a7bc98c12695b0bca78331c933c492917921e392c4b2c6554929794c49b989b9fe41eeba86060606c6064686a64965055986868696c626960606e6492925594640615d0313a092a4e47ca00149c999156a06869e21aee6c60606ae868e4e468e1626cee686400d266e8606c62ece4e866ee6068eca6649b90539aea1fa86fa4606fa86a646164999c520038a5398924ad2332d4c0c4c8d819acc92f312739724a7e59564ba78da383b060479fa27a5e565ba642a3827161465e627a7e795e4fa3a0679fa84da84b806b9063b26a5e7e5f9261665e61cdea910925a945a9c985c06a40cf50cf40c9253f293b20c2dcdcd750dcc740dcd221c96bc9b207670b9cff939ab76b27aea66f6674e5af1cbe010ef36097e36161e8f8215aebbbdad641e7f791b34e7785f9a91aafb3535f3e35e1b2b250fac0a5a265219370f006c9472ca",
+  "BASE45" : "6BFOXN%TS3DH0YOJ58S S-W5HDC *M0II5XHC9B5G2+$N IOP-IA%NFQGRJPC%OQHIZC4.OI1RM8ZA.A5:S9MKN4NN3F85QNCY0O%0VZ001HOC9JU0D0HT0HB2PL/IB*09B9LW4T*8+DCMH0LDK2%K:XFE70*LP$V25$0Q:J:4MO1P0%0L0HD+9E/HY+4J6TH48S%4K.GJ2PT3QY:GQ3TE2I+-CPHN6D7LLK*2HG%89UV-0LZ 2ZJJ524-LH/CJTK96L6SR9MU9DHGZ%P WUQRENS431T1XCNCF+47AY0-IFO0500TGPN8F5G.41Q2E4T8ALW.INSV$ 07UV5SR+BNQHNML7 /KD3TU 4V*CAT3ZGLQMI/XI%ZJNSBBXK2:UG%UJMI:TU+MMPZ5$/PMX19UE:-PSR3/$NU44CBE6DQ3D7B0FBOFX0DV2DGMB$YPF62I$60/F$Z2I6IFX21XNI-LM%3/DF/U6Z9FEOJVRLVW6K$UG+BKK57:1+D10%4K83F+1VWD1NE",
+  "PREFIX" : "HC1:6BFOXN%TS3DH0YOJ58S S-W5HDC *M0II5XHC9B5G2+$N IOP-IA%NFQGRJPC%OQHIZC4.OI1RM8ZA.A5:S9MKN4NN3F85QNCY0O%0VZ001HOC9JU0D0HT0HB2PL/IB*09B9LW4T*8+DCMH0LDK2%K:XFE70*LP$V25$0Q:J:4MO1P0%0L0HD+9E/HY+4J6TH48S%4K.GJ2PT3QY:GQ3TE2I+-CPHN6D7LLK*2HG%89UV-0LZ 2ZJJ524-LH/CJTK96L6SR9MU9DHGZ%P WUQRENS431T1XCNCF+47AY0-IFO0500TGPN8F5G.41Q2E4T8ALW.INSV$ 07UV5SR+BNQHNML7 /KD3TU 4V*CAT3ZGLQMI/XI%ZJNSBBXK2:UG%UJMI:TU+MMPZ5$/PMX19UE:-PSR3/$NU44CBE6DQ3D7B0FBOFX0DV2DGMB$YPF62I$60/F$Z2I6IFX21XNI-LM%3/DF/U6Z9FEOJVRLVW6K$UG+BKK57:1+D10%4K83F+1VWD1NE",
+}
+
+
+// Explanation: https://ec.europa.eu/health/sites/default/files/ehealth/docs/digital-green-certificates_dt-specifications_en.pdf
+// Data: https://data.public.lu/fr/datasets/europe-ehealth-network-digital-covid-certificate-payload/#_
+// Github repo with test QR codes / green passes: https://github.com/eu-digital-green-certificates/dgc-testdata/tree/main/IT/png
+// Github for JSON files with official values: https://github.com/ehn-dcc-development/ehn-dcc-schema/tree/release/1.3.0/valuesets
+
+fieldsDescriptions =
+	{
+		'-260':
+				{
+					1:
+					{
+						'dob': 'YYYY-MM-DD', // date of birth
+						'nam': {
+										'fn': 'Family name (surname)', // Family name (surname)
+										'fnt': 'xxxxxxxx<xxxxxx', // Family name in special format
+										'gn': 'Given name', // Given name
+										'gnt': 'xxxxxxxxx', // Given name  in special format
+									 },
+						'v': [
+									{
+										'tg': 'Targeted disease', 		// Targeted disease (COVID-19 = 840539006), see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/disease-agent-targeted.json
+										'vp': 'Vaccine or prophylaxis', 		// Vaccine or prophylaxis (COVID-19 = 1119349007), see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/vaccine-prophylaxis.json
+										'mp': 'Vaccine product id', 	// Vaccine product id, see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/vaccine-medicinal-product.json
+										'ma': 'Vaccine manufacturer', 	// Vaccine manufacturer, see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/vaccine-mah-manf.json
+										'dn': 'Doses received', // Doses received (number)
+										'sd': 'Total number of doses', // Total number of doses (number)
+										'dt': 'Date of vaccination', // Date of vaccination  YYYY-MM-DD (complete date without time)
+										'co': 'Country of vaccination', // Country of vaccination, see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/country-2-codes.json
+										'is': 'Certificate issuer', // Certificate issuer (plain text)
+										'ci': 'Certificate ID', // Certificate ID
+									}
+								],
+
+						'r': [
+									{
+										'tg': 'Targeted disease', 		// Targeted disease (COVID-19 = 840539006), see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/disease-agent-targeted.json
+										'fr': 'Date of first test', // Date of the holder’s first positive NAAT test result. YYYY-MM-DD (complete date without time).
+										'co': 'Country', // Member State or third country in which test was carried out, see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/country-2-codes.json
+										'is': 'Certificate issuer', // Certificate issuer (plain text)
+										'df': 'Valid from', // Certificate valid from YYYY-MM-DD (complete date without time).
+										'du': 'Valid to', // Certificate valid until to YYYY-MM-DD (complete date without time).
+										'ci': 'Certificate ID', // Certificate ID
+									}
+								],
+						'ver': '1.2.1'
+					}
+				}, // schema version
+		 '1': 'QR code issuer country', // QR code issuer country
+		 '4': 'QR code expiry date', // QR code expiry date in timestamp format (SECONDS)
+		 '6': 'QR code generated'  // QR code generated in timestamp format (SECONDS)
+	 };
+
+
+function hexStringToArrayBuffer(hexString) {
+//https://gist.github.com/don/871170d88cf6b9007f7663fdbc23fe09#file-hexstringtoarraybuffer-js
+    // remove the leading 0x
+    hexString = hexString.replace(/^0x/, '');
+
+    // ensure even number of characters
+    if (hexString.length % 2 != 0) {
+        console.log('WARNING: expecting an even number of characters in the hexString');
+    }
+
+    // check for some non-hex characters
+    var bad = hexString.match(/[G-Z\s]/i);
+    if (bad) {
+        console.log('WARNING: found non-hex characters', bad);
+    }
+
+    // split the string into pairs of octets
+    var pairs = hexString.match(/[\dA-F]{2}/gi);
+
+    // convert the octets to integers
+    var integers = pairs.map(function(s) {
+        return parseInt(s, 16);
+    });
+
+    var array = new Uint8Array(integers);
+    return array.buffer;
+}
+
+function buf2hex(buffer) {
+// https://stackoverflow.com/questions/34309988/byte-array-to-hex-string-conversion-in-javascript
+    var u = new Uint8Array(buffer),
+        a = new Array(u.length),
+        i = u.length;
+    while (i--) // map to hex
+        a[i] = (u[i] < 16 ? '0' : '') + u[i].toString(16);
+    u = null; // free memory
+    return a.join('');
+};
+
+function typedArrayToBuffer(array) {
+// https://stackoverflow.com/questions/37228285/uint8array-to-arraybuffer
+    return array.buffer.slice(array.byteOffset, array.byteLength + array.byteOffset)
+}
+
+function controlla() {
+
+	list=Object.values(manufacturer)[2]; // Extract actual list  from file
+	manufacturersValues=Object.values(list); // extract values
+	manufacturersKeys=Object.keys(list); // extract keys
+	// To find the name of the manufacturer: manufacturersValues[manufacturersKeys.indexOf(<field 'ma'>)].display
+
+	list=Object.values(product)[2]; // Extract actual list  from file
+	productsValues=Object.values(list); // extract values
+	productsKeys=Object.keys(list); // extract keys
+	// To find the name of the manufacturer: productsValues[productsKeys.indexOf(<field 'mp'>)].display
+
+	list=Object.values(prophylaxis)[2]; // Extract actual list  from file
+	prophylaxisValues=Object.values(list); // extract values
+	prophylaxisKeys=Object.keys(list); // extract keys
+	// To find the name of the manufacturer: prophylaxisValues[prophylaxisKeys.indexOf(<field 'vp'>)].display
+
+	list=Object.values(diseases)[2]; // Extract actual list  from file
+	diseasesValues=Object.values(list); // extract values
+	diseasesKeys=Object.keys(list); // extract keys
+	// To find the name of the manufacturer: diseasesValues[diseasesKeys.indexOf(<field 'tg'>)].display
+
+	list=Object.values(testManufObj)[2]; // Extract actual list  from file
+	testDeviceValues=Object.values(list); // extract values
+	testDeviceKeys=Object.keys(list); // extract keys
+	// To find the name of the manufacturer: testDeviceValues[testDeviceKeys.indexOf(<field 'ma'>)].display
+
+	list=Object.values(testTypeObj)[2]; // Extract actual list  from file
+	testTypeValues=Object.values(list); // extract values
+	testTypeKeys=Object.keys(list); // extract keys
+	// To find the name of the manufacturer: testTypeValues[testTypeKeys.indexOf(<field 'tt'>)].display
+
+	list=Object.values(testResultObj)[2]; // Extract actual list  from file
+	testResultValues=Object.values(list); // extract values
+	testResultKeys=Object.keys(list); // extract keys
+	// To find the name of the manufacturer: testResultValues[testResultKeys.indexOf(<field 'tr'>)].display
+
+
+
+ // Process:
+ // QR Image --> HC1 string --> BASE45 string --> ZIP array --> COSE array --> CBOR array --> json object
+
+  BASE45 = raw.value.replace("HC1:","");
+  //console.log("BASE45=",BASE45);
+
+  // Decode BASE45:
+  COMPRESSED = decode(BASE45).raw; // debug oppure raw?
+
+  // Unzip the COMPRESSED:
+  COSEbin =  pako.inflate(COMPRESSED);
+  //console.log("UNZ:",COSEbin);
+
+	COSE = buf2hex(COSEbin);
+  console.log("UNZ:",COSE);
+
+	//console.log("Input:", raw.innerHTML.length);
+	//console.log("Test:", testData.COSE.length);
+	var typedArray = new Uint8Array(COSE.match(/[\da-f]{2}/gi).map(function (h) {
+	  return parseInt(h, 16)
+	})) // https://stackoverflow.com/questions/43131242/how-to-convert-a-hexadecimal-string-of-data-to-an-arraybuffer-in-javascript
+	var unzipped = typedArray.buffer;
+	//console.log("unzipped=",unzipped) ;
+
+	[headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);
+	//console.log("cbor_data=",cbor_data) ;
+
+	//cbor_dataStr =  buf2hex(cbor_data);
+	//console.log("decodedStr=",decodedStr);
+	//cbor_dataArr=hexStringToArrayBuffer(cbor_dataStr);
+	cbor_dataArr = typedArrayToBuffer(cbor_data);
+	//console.log("cbor_dataArr=",cbor_dataArr);
+
+	greenpassData  = CBOR.decode(cbor_dataArr);
+	qrdays = ((greenpassData[4]*1000 - greenpassData[6]*1000)/86400000).toFixed(0);
+	qrmonths = ((greenpassData[4]*1000 - greenpassData[6]*1000)/2592000000).toFixed(0);
+	qrCreation = new Date(greenpassData[6]*1000).toLocaleString();
+	qrExpiration = new Date(greenpassData[4]*1000).toLocaleString();
+	console.log("greenpassData =",greenpassData  );
+
+	rawjson.innerHTML = JSON.stringify(greenpassData, null, "\t");;
+
+	firstname.innerHTML =  "-";
+	surname.innerHTML =    "-";
+	birth.innerHTML =    "-";
+
+	covidend.innerHTML =   "-";
+	tested.innerHTML =   "-";
+	vaccin.innerHTML =   "-";
+
+/// VACCINATO
+	targetV.innerHTML =   "-";
+	proph.innerHTML =   "-";
+	vaccid.innerHTML =   "-";
+	manuf.innerHTML =   "-";
+	receivedDoses.innerHTML =    "-";
+	neededDoses.innerHTML =    "-";
+	vaccinDate.innerHTML =    "-";
+	nation.innerHTML =    "-";
+	issuerV.innerHTML =  "-";
+	idV.innerHTML =    "-";
+
+/// TESTATO
+	testDate.innerHTML =   "-"; //sc
+	testDevice.innerHTML =   "-"; //ma
+	testType.innerHTML =   "-"; //tt
+	testName.innerHTML =   "-"; //nm
+	testCountryTestato.innerHTML =   "-"; //co
+	testCenter.innerHTML =   "-"; //tc
+	testCertId.innerHTML =   "-"; //ci
+	issuerT.innerHTML =   "-"; //is
+	testDisease.innerHTML =   "-"; //tg
+	testResult.innerHTML =   "-"; //tr
+
+/// GUARITO
+	covidend.innerHTML =    "-";
+	targetR.innerHTML =    "-";
+	firstPositive.innerHTML =    "-";
+	testCountryGuarito.innerHTML =    "-";
+	issuerR.innerHTML =    "-";
+	validFromR.innerHTML =    "-";
+	validToR.innerHTML =    "-";
+	validForDaysR.innerHTML =    "-";
+	certIdR.innerHTML =    "-";
+
+
+	validFromR.innerHTML =    "-";
+  validToR.innerHTML =    "-";
+  validForDaysR.innerHTML = "-";
+
+try {
+	console.log("First name:", greenpassData[-260][1].nam.gn);
+	firstname.innerHTML =  greenpassData[-260][1].nam.gn;
+
+	console.log("Surname:", greenpassData[-260][1].nam.fn);
+	surname.innerHTML =  greenpassData[-260][1].nam.fn;
+
+	console.log("Born:", greenpassData[-260][1].dob);
+	birth.innerHTML =  greenpassData[-260][1].dob;
+
+////////////// VACCINATO
+	if (greenpassData[-260][1].v != null) {
+		console.log("Vaccinato");
+		vaccin.innerHTML =   "Yes";
+		targetV.innerHTML =   diseasesValues[diseasesKeys.indexOf(greenpassData[-260][1].v[0].tg)].display;
+		proph.innerHTML =   prophylaxisValues[prophylaxisKeys.indexOf(greenpassData[-260][1].v[0].vp)].display;
+		vaccid.innerHTML =   productsValues[productsKeys.indexOf(greenpassData[-260][1].v[0].mp)].display;
+		manuf.innerHTML =   manufacturersValues[manufacturersKeys.indexOf(greenpassData[-260][1].v[0].ma)].display;
+
+		console.log("Vaccine doses:", greenpassData[-260][1].v[0].dn);
+		receivedDoses.innerHTML =  greenpassData[-260][1].v[0].dn;
+
+		console.log("Vaccine doses needed:", greenpassData[-260][1].v[0].sd);
+		neededDoses.innerHTML =  greenpassData[-260][1].v[0].sd;
+
+		console.log("Vaccin date:", greenpassData[-260][1].v[0].dt);
+		vaccinDate.innerHTML =  greenpassData[-260][1].v[0].dt;
+
+		nation.innerHTML =  greenpassData[-260][1].v[0].co;
+
+		issuerV.innerHTML =  greenpassData[-260][1].v[0].is;
+		idV.innerHTML =    greenpassData[-260][1].v[0].ci;
+
+		} else {
+			vaccin.innerHTML =   "No";
+		}
+
+////////// TESTATO
+	if (greenpassData[-260][1].t != null) {
+		console.log("Testato");
+		tested.innerHTML =   "Yes";
+		testDisease.innerHTML =   diseasesValues[diseasesKeys.indexOf(greenpassData[-260][1].t[0].tg)].display;
+		testType.innerHTML =  testTypeValues[testTypeKeys.indexOf(greenpassData[-260][1].t[0].tt)].display;
+		testName.innerHTML =   greenpassData[-260][1].t[0].nm;
+		testDevice.innerHTML =  testDeviceValues[testDeviceKeys.indexOf(greenpassData[-260][1].t[0].ma)].display;;
+		testDate.innerHTML =    greenpassData[-260][1].t[0].sc;
+		testResult.innerHTML =   greenpassData[-260][1].t[0].tr;
+		testCenter.innerHTML =   greenpassData[-260][1].t[0].tc;
+		//dr.innerHTML =    greenpassData[-260][1].t[0].dr; ???
+		testCountryTestato.innerHTML =  greenpassData[-260][1].t[0].co;
+		issuerT.innerHTML =   greenpassData[-260][1].t[0].is;
+		testCertId.innerHTML =   greenpassData[-260][1].t[0].ci;
+	}else {
+			tested.innerHTML =   "No";
+	}
+
+
+///////// GUARITO
+	if (greenpassData[-260][1].r != null) {
+		console.log("Guarito");
+		covidend.innerHTML =   "Yes";
+		targetR.innerHTML =    diseasesValues[diseasesKeys.indexOf(greenpassData[-260][1].r[0].tg)].display;;
+		console.log("1");
+		firstPositive.innerHTML =    greenpassData[-260][1].r[0].fr;
+		testCountryGuarito.innerHTML =    greenpassData[-260][1].r[0].co;
+		console.log("2");
+		issuerR.innerHTML =    greenpassData[-260][1].r[0].is;
+		validFromR.innerHTML =    greenpassData[-260][1].r[0].df;
+		validToR.innerHTML =    greenpassData[-260][1].r[0].du;
+
+		fromDate = new Date(greenpassData[-260][1].r[0].df);
+		toDate = new Date(greenpassData[-260][1].r[0].du);
+		diffDays = (toDate.getTime() - fromDate.getTime())/86400000;
+		validForDaysR.innerHTML =    diffDays.toFixed(0);
+		certIdR.innerHTML =    greenpassData[-260][1].r[0].ci;
+
+	} else {
+			covidend.innerHTML =   "No";
+	}
+
+
+} catch (e) {
+	console.log("ops");
+}
+	console.log("QR code creation date:", qrCreation);
+	console.log("QR code expiration date:", qrExpiration);
+	console.log("QR code duration (days):",   qrdays);
+	console.log("QR code duration (months):", qrmonths);
+
+	qrdate1.innerHTML =  qrCreation;
+	qrdate2.innerHTML =  qrExpiration;
+	days.innerHTML =  qrdays;
+	months.innerHTML =  qrmonths;
+
+	today = new Date();
+	todayDays = today.getDate();
+
+	diff = (new Date(greenpassData[4]*1000).getTime() - (new Date()).getTime())/86400000;
+	daysleft.innerHTML = diff.toFixed(0);
+	monthsleft.innerHTML = (diff/30).toFixed(2);
+
+}
+
+raw.innerHTML = testData.BASE45;
+</script>
+  </body>
+</html>
