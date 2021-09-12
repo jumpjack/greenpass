@@ -157,3 +157,45 @@ Here you can find some test QR codes from official source, in case you want to t
             }
         }
     }
+
+------------
+
+Basic javascript steps (see source for details):
+
+    source = document.getElementById("encoded").value; // Raw QR reader output
+    decoded = decode(source).enc; // decode BASE45
+    COSEbin =  pako.inflate(decode(source).raw); // decompress
+    
+    // convert for CBOR library:
+    COSE = buf2hex(COSEbin); 
+    var typedArray = new Uint8Array(COSE.match(/[\da-f]{2}/gi).map(function (h) {
+          return parseInt(h, 16)
+        })) // https://stackoverflow.com/questions/43131242/how-to-convert-a-hexadecimal-string-of-data-to-an-arraybuffer-in-javascript
+    var unzipped = typedArray.buffer;
+    
+    // Decode CBOR data first time:
+    [headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);
+    cbor_dataArr = typedArrayToBuffer(cbor_data);
+    
+    // Decode CBOR data second time:
+    greenpassData  = CBOR.decode(cbor_dataArr);
+
+--------------
+
+Useful resources:
+
+- Original base45 node.js decoder: https://github.com/dirkx/base45-js/blob/main/lib/base45-js.js
+- Zlib unpacker library for browser: https://github.com/nodeca/pako/blob/master/dist/pako.min.js
+- CBOR unpacker: https://github.com/paroga/cbor-js
+- Dummy greenpass for testing: https://gir.st/blog/img/greenpass-demo.png
+- Official data for testing: https://github.com/eu-digital-green-certificates/dgc-testdata/tree/main/IT/png
+- Documentation on json fields: https://ec.europa.eu/health/sites/default/files/ehealth/docs/digital-green-certificates_dt-specifications_en.pdf
+- Databases for decoding fields values: https://github.com/ehn-dcc-development/ehn-dcc-schema/tree/release/1.3.0/valuesets
+- My reference guides for decoding greenpass: https://dev.to/lmillucci/javascript-how-to-decode-the-greenpass-qr-code-3dh0
+- https://gir.st/blog/greenpass.html : Sample data containing 5 strings:
+
+- Original QR-decoded string
+- BASE45 string
+- Compressed string
+- COSE string
+- CBOR string
