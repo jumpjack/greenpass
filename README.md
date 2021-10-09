@@ -1,21 +1,12 @@
 # greenpass
  Pure javascript greenpass QR code decoder in browser
  
- -  Main page: <a href="http://jumpjack.altervista.org/greenpass/">link</a>
+ - Main page: <a href="http://jumpjack.altervista.org/greenpass/">link</a>
  - Test page for developers (only console output): <a href="https://jumpjack.altervista.org/greenpass/mini.html">link</a>
- - Qrcode library:
- 
-https://github.com/klonikar/qrcodejs
+ - Qrcode library: https://github.com/klonikar/qrcodejs
+ - Test data taken  from: https://github.com/eu-digital-green-certificates/dgc-testdata/tree/main/IT
 
-
-
-
-
- - Test data taken  from:
-https://github.com/eu-digital-green-certificates/dgc-testdata/tree/main/IT
-
-
-
+--------------------
 
 With this tool you can decode, view and understand all the data actually contained in your greenpass/QR, which are instead not visible using the standard app to check green pass validity, but you can't validate (i.e. verify if QR is valid and legal), this function is not implemented; but the script exposes variables **headers1, headers2, cbor_data,** and  **signature**; greenpass JSON data are in **cbor_data**, the other variables are for validation.
 
