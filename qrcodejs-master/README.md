@@ -1,6 +1,8 @@
 # qrcodejs
 Javascript Library for all about QR codes: Contains QR code encode, decode, launch webcam, select front/rear camera on mobile
 
+Original repositorty: https://github.com/klonikar/qrcodejs
+
 Credits:
    * QR Code creation: http://davidshimjs.github.io/qrcodejs/ (https://github.com/davidshimjs/qrcodejs)
    * QR Code reading/decoding: https://github.com/LazarSoft/jsqrcode and the demo http://webqr.com
