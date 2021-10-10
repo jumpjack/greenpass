@@ -9,6 +9,7 @@
 
 <center><big><big>Greenpass pure javascript decoder in browser</big></big><br>
 v. 1.0.0<br>
+Source code: <a href="">link</a><br>
 </center><br>
 <br>
 <br>
@@ -36,6 +37,11 @@ Cognome: <b><span id="surname" name="surname"></span></b><br>
 Nato il  <b><span id="birth" name="birth"></span></b><br>
 <br>
 Certificato di tampone: <b><span id="tested" name="tested"></span></b><br>
+Certificato di guarigione: <b><span id="covidend" name="covidend"></span></b><br>
+Certificato di vaccinazione: <b><span id="vaccin" name="vaccin"></span></b><br>
+<br>
+<br>
+Dati tampone:<br>
 Date: <b><span id="testDate" name="testDate"></span></b><br>
 Device: <b><span id="testDevice" name="testDevice"></span></b><br>
 Type: <b><span id="testType" name="testType"></span></b><br>
@@ -48,7 +54,7 @@ Disease: <b><span id="testDisease" name="testDisease"></span></b><br>
 RESULT: <b><span id="testResult" name="testResult"></span></b><br>
 
 <br>
-Certificato di guarigione: <b><span id="covidend" name="covidend"></span></b><br>
+Dati guarigione:<br>
 Target desease: <b><span id="targetR" name="targetR"></span></b><br>
 First positive date:  <b><span id="firstPositive" name="firstPositive"></span></b><br>
 Test country: <b><span id="testCountryGuarito" name="testCountryGuarito"></span></b><br>
@@ -58,8 +64,8 @@ Valid to: <b><span id="validToR" name="validToR"></span></b><br>
 Valid for: <b><span id="validForDaysR" name="validForDaysR"></span></b> days<br>
 Id: <b><span id="certIdR" name="certIdR"></span></b><br>
 <br>
-Certificato di vaccinazione: <b><span id="vaccin" name="vaccin"></span></b><br>
-
+<br>
+Dati vaccinazione:<br>
 Malattia: <b><span id="targetV" name="targetV"></span></b><br>
 Profilassi: <b><span id="proph" name="proph"></span></b><br>
 ID vaccino: <b><span id="vaccid" name="vaccid"></span></b><br>
@@ -79,6 +85,7 @@ Alla scadenza mancano <b><span id="daysleft" name="daysleft"></span></b> giorni
 (<b><span id="monthsleft" name="monthsleft"></span></b> mesi).<br>
 
 	<!-- https://github.com/klonikar/qrcodejs -->
+ 	<!-- file a parte -->
 
   <script src="pako.min.js"></script>
 	<!-- https://github.com/nodeca/pako/blob/master/dist/pako.min.js -->
