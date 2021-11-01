@@ -1,4 +1,6 @@
-# greenpass
+ OVERVIEW
+===========
+
  Pure javascript greenpass QR code decoder in browser
  
  - Main page: <a href="http://jumpjack.altervista.org/greenpass/">link</a>
@@ -16,11 +18,14 @@ The decoding process is:
 
 QR code --> **QR DECODER** --> RAW QR-decoded string --> **BASE45 decoder** --> zlib compressed string --> **pako library** --> COSE object --> **CBOR decoder** --> CBOR object --**> CBOR decoder** --> final JSON file
 
+Technical details
+=================
+
 The line which provides as result the raw COSE object is:
 
 `[headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);`
 
-It can also be found in other codes as:
+It can also be found in other sources as:
 
 `[protected_header, unprotected_header, cbor_data, signatures] = CBOR.decode(unzipped);`
 
@@ -29,9 +34,14 @@ The 4 elements of the CBOR array have these formats:
  - [0] = protected_header = CBORType.ByteString  ---> To be further decodec by CBOR.decode()
  - [1] = unprotected_header = CBORType.Map         ---> Empty
  - [2] = cbor_data = CBORType.ByteString  ---> To be further decodec by CBOR.decode()
- - [3] = signatures CBORType.ByteString  ---> Raw? (unclear)
+ - [3] = signatures CBORType.ByteString  ---> Raw TBW
 
-In raw format, the CBOR byte sequence of the greenpass is:
+Example data (COSE sequence (i.e. CBOR signed sequence) derived from unzipping of QR code / base45 data):
+
+	d2844da2044839301768cdda05130126a0590101a4041a6194e898061a60a78c8801624954390103a101a4617681aa62646e02626d616d4f52472d3130303033303231356276706a313131393334393030376264746a323032312d30342d313062636f62495462636978263031495445373330304531414232413834433731393030344631303344434231463730412336626d706c45552f312f32302f313532386269736249546273640262746769383430353339303036636e616da463666e746944493c43415052494f62666e6944692043617072696f63676e746d4d4152494c553c54455245534162676e6e4d6172696cc3b9205465726573616376657265312e302e3063646f626a313937372d30362d31365840a4ee9016c1a74ccf9caab905492d698f6992a8fa30c20db6180f06040c4870a845bb4b3a1ce3f4ed529cc78e66322547d62637c74ab17919c0aa52a614795e9e
+
+
+In raw format, the COSE byte sequence of the greenpass is:
 
 	  d2                -- Tag #18 - Number identifying the used algorithm for signature in cose sign.js? (18dec, 0x12 = "Sign1Tag" algorithm)
 	    84              -- Array, 4 items
@@ -45,7 +55,7 @@ In raw format, the CBOR byte sequence of the greenpass is:
 		40          -- Bytes, length: 64
 			   [snip] - The signature of the CBOR object (format unknown)
 
-Referennce for signature algorithm: [cose "sign.js" file](https://github.com/erdtman/cose-js/blob/004751a1bd88265cce768f3466ea86ecbf2945fa/lib/sign.js#L230)
+Reference for signature algorithm: [cose "sign.js" file](https://github.com/erdtman/cose-js/blob/004751a1bd88265cce768f3466ea86ecbf2945fa/lib/sign.js#L230)
  
  
 Both protected and unprotected header have this structure:
@@ -132,9 +142,137 @@ The hexadecimal sequence must be converted to BASE64; the provided example  "393
 
 The "x5c" is the certificate, to be enclosed between "-----BEGIN CERTIFICATE-----" and "-----END CERTIFICATE-----" strings.
 
+The signature
+-------------
+
+Last element of CBOR array contains the signature of the greenpass; it's made of 64 bytes, which must be split in 2 to get values "R" and "S"; in our example:
+
+- A4EE9016C1A74CCF9CAAB905492D698F6992A8FA30C20DB6180F06040C4870A845BB4B3A1CE3F4ED529CC78E66322547D62637C74AB17919C0AA52A614795E9E 
+
+This is a sequence of alphamumeric couples, each one represeting an hexadecimal number. It should (to be confirmed) represent a signature in P1663 format, which should be converted to DER format to be used in OPENSSL.
+
+Splitted:
+
+ -  R: A4EE9016C1A74CCF9CAAB905492D698F6992A8FA30C20DB6180F06040C4870A8
+  - S: 45BB4B3A1CE3F4ED529CC78E66322547D62637C74AB17919C0AA52A614795E9E 
+
+This article explains how to use these numbers to perform a local signature verification using openssl:
+
+http://www.corentindupont.info/blog/posts/Programming/2021-08-13-GreenPass.html
+
+ANS.1 DER checker: https://lapo.it/asn1js/
+
+According to [RFC8152](https://datatracker.ietf.org/doc/html/rfc8152#section-4.4), signature verification procedure is:
+
+
+>   1.  Create a Sig_structure object and populate it with the
+>       appropriate fields.
+>
+>   2.  Create the value ToBeSigned by encoding the Sig_structure to a
+>       byte string, using the encoding described in Section 14.
+>
+>   3.  Call the signature verification algorithm passing in K (the key
+>       to verify with), alg (the algorithm used sign with), ToBeSigned
+>       (the value to sign), and sig (the signature to be verified).
+
+ - **K**: verifier
+ - **alg**:  -7/ES256/SHA-256
+ - **sig**: raw greenpass signature hex string representing 64 bytes	
+ - **ToBeSigned**: cbor encoding of:
+
+	const SigStructure = [
+		'Signature1', // text string
+		p, //    cbor.encode(cbor.decodeFirstSync(protected_header)); /// Decode and re-encode?!? Hence unchanged?
+		externalAAD, // Always EMPTY_BUFFER in greenpass?
+		plaintext // cbor_data from  [headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);
+	];
+
+Hence:
+
+	const SigStructure = [
+		'Signature1',
+		protected_header,
+		EMPTY_BUFFER,
+		cbor_data
+	];
+
+Types:
+
+	   Sig_structure = [
+	       context : "Signature1",
+	       body_protected : empty_or_serialized_map,
+	       ? sign_protected : empty_or_serialized_map,
+	       external_aad : bstr,
+	       payload : bstr
+	
+This Sig_structure can be seen in [SIGN.JS file of COSE](https://github.com/erdtman/cose-js/blob/004751a1bd88265cce768f3466ea86ecbf2945fa/lib/sign.js#L285) javascript library.
+	
+	       
+Program flow for checking signature:
+
+	unzipped = zlib.inflateSync(base45Data); // raw uncompressed greenpass = COSE object (CBOR signed) = [p, u, payload, signature] ([here](https://github.com/ministero-salute/dcc-utils/blob/99e255d46997b9324748733d98ab151fcb4a3162/src/dcc.js#L12))
+	COSEraw = unzipped;
+	cose.sign.verify(
+				COSEraw, 
+				{
+					key: {
+					// x, y and KID are extraxted from public certificate taken from 'https://raw.githubusercontent.com/bcsongor/covid-pass-verifier/35336fd3c0ff969b5b4784d7763c64ead6305615/src/data/certificates.json'
+					x: Buffer.from(signature.pub.x), 
+					y: Buffer.from(signature.pub.y),
+					kid: Buffer.from(signature.kid),
+					},
+				}
+			); // (COSE library [sign.js](https://github.com/erdtman/cose-js/blob/004751a1bd88265cce768f3466ea86ecbf2945fa/lib/sign.js))
+		
+		COSE = CBOR.decode(COSEraw);
+
+		verifyInternal({
+			key: {
+				x: Buffer.from(signature.pub.x), // x, y and KID are extraxted from public certificate
+				y: Buffer.from(signature.pub.y),
+				kid: Buffer.from(signature.kid),
+				},
+			}, {}, COSE); //in [sign.js](https://github.com/erdtman/cose-js/blob/004751a1bd88265cce768f3466ea86ecbf2945fa/lib/sign.js#L220)
+
+			doVerify(     
+				SigStructure = 
+					[
+						'Signature1',
+						COSE[0],
+						EMPTY_BUFFER,
+						COSE[2]
+					],
+				verifier = 
+				{
+					key: 
+						{
+							x: Buffer.from(signature.pub.x), // x, y and KID are extraxted from public certificate
+							y: Buffer.from(signature.pub.y),
+							kid: Buffer.from(signature.kid),
+						},
+				}, 
+				alg, // Always -7 for greenpass?
+				sig  // Raw signature of greenpass (64 bytes as hex string)
+				);
+				
+				AlgFromTags[-7] = { 'sign': 'ES256', 'digest': 'SHA-256' };
+				COSEAlgToNodeAlg = {  'ES256': { 'sign': 'p256', 'digest': 'sha256' }, // .... }; /Only ES256 used in greenpass?
+				nodeAlg = COSEAlgToNodeAlg[AlgFromTags[alg].sign] // = COSEAlgToNodeAlg[AlgFromTags[-7].sign] = COSEAlgToNodeAlg[ES256] = { 'sign': 'p256', 'digest': 'sha256' }
+				const hash = crypto.createHash(nodeAlg.digest); // =  crypto.createHash('sha256')    (CRYPTO library)
+				hash.update(cbor.encode(SigStructure));
+				const msgHash = hash.digest();
+				const pub = { 'x': Buffer.from(signature.pub.x), 'y': Buffer.from(signature.pub.y) };  // Data from public certificate
+				const ec = new EC(nodeAlg.sign); // = new EC('p256')  (Elliptic curve library)
+				const key = ec.keyFromPublic(pub); 
+				sig = { 'r': sig.slice(0, sig.length / 2), 's': sig.slice(sig.length / 2) }; // Signature is split in 2 halves: R and S
+				key.verify(msgHash, sig); // Final call to signature check algorithm in Elliptic Curve library
+
+			  
+			  
+
 
 CBOR online decoders
---------------------
+====================
 
 Following sites can be used to decode online CBOR bytes sequence without writing lines of code:
  - http://cbor.me/
