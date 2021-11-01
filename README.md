@@ -14,7 +14,132 @@ You don't need to upload your QR code to any site, all processing is performed o
 
 The decoding process is:
 
-QR code --> **QR DECODER** --> RAW QR-decoded string --> **BASE45 decoder** --> zlib compressed string --> **pako library** --> COSE string --> **CBOR decoder** --> CBOR string --**> CBOR decoder** --> final JSON file
+QR code --> **QR DECODER** --> RAW QR-decoded string --> **BASE45 decoder** --> zlib compressed string --> **pako library** --> COSE object --> **CBOR decoder** --> CBOR object --**> CBOR decoder** --> final JSON file
+
+The line which provides as result the raw COSE object is:
+
+`[headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);`
+
+It can also be found in other codes as:
+
+`[protected_header, unprotected_header, cbor_data, signatures] = CBOR.decode(unzipped);`
+
+The 4 elements of the CBOR array have these formats:
+
+ - [0] = protected_header = CBORType.ByteString  ---> To be further decodec by CBOR.decode()
+ - [1] = unprotected_header = CBORType.Map         ---> Empty
+ - [2] = cbor_data = CBORType.ByteString  ---> To be further decodec by CBOR.decode()
+ - [3] = signatures CBORType.ByteString  ---> Raw? (unclear)
+
+In raw format, the CBOR byte sequence of the greenpass is:
+
+	  d2                -- Tag #18 - Number identifying the used algorithm for signature in cose sign.js? (18dec, 0x12 = "Sign1Tag" algorithm)
+	    84              -- Array, 4 items
+	      4d            -- Bytes, length: 13
+		            [snip] - Protected array, containing Algorithm and KID
+	      a0            -- [1], {} - Unprotected array, empty
+	      59            -- Bytes, length next 2 bytes
+		0101        -- Bytes, length: 257
+			    [snip] - The JSON structure contanining actual greenpas data
+	      58            -- Bytes, length next 1 byte
+		40          -- Bytes, length: 64
+			   [snip] - The signature of the CBOR object (format unknown)
+
+Referennce for signature algorithm: [cose "sign.js" file](https://github.com/erdtman/cose-js/blob/004751a1bd88265cce768f3466ea86ecbf2945fa/lib/sign.js#L230)
+ 
+ 
+Both protected and unprotected header have this structure:
+
+
+	Generic_Headers = (
+	       ? 1 => int / tstr,  ; algorithm identifier           IN GREENPASS
+	       ? 2 => [+label],    ; criticality
+	       ? 3 => tstr / int,  ; content type
+	       ? 4 => bstr,        ; key identifier                 IN GREENPASS
+	       ? 5 => bstr,        ; IV
+	       ? 6 => bstr,        ; Partial IV
+	       ? 7 => COSE_Signature / [+COSE_Signature] ; Counter signature
+	   )
+
+ Other view (source: https://datatracker.ietf.org/doc/html/rfc8152#page-15 , ):
+ 
+ 
+	   +-----------+-------+----------------+-------------+----------------+
+	   | Name      | Label | Value Type     | Value       | Description    |
+	   |           |       |                | Registry    |                |
+	   +-----------+-------+----------------+-------------+----------------+
+	   | alg       | 1     | int / tstr     | COSE        | Cryptographic  |           IN GREENPASS
+	   |           |       |                | Algorithms  | algorithm to   |
+	   |           |       |                | registry    | use            |
+	   | crit      | 2     | [+ label]      | COSE Header | Critical       |
+	   |           |       |                | Parameters  | headers to be  |
+	   |           |       |                | registry    | understood     |
+	   | content   | 3     | tstr / uint    | CoAP        | Content type   |
+	   | type      |       |                | Content-    | of the payload |
+	   |           |       |                | Formats or  |                |
+	   |           |       |                | Media Types |                |
+	   |           |       |                | registries  |                |
+	   | kid       | 4     | bstr           |             | Key identifier |           IN GREENPASS
+	   | IV        | 5     | bstr           |             | Full           |
+	   |           |       |                |             | Initialization |
+	   |           |       |                |             | Vector         |
+	   | Partial   | 6     | bstr           |             | Partial        |
+	   | IV        |       |                |             | Initialization |
+	   |           |       |                |             | Vector         |
+	   | counter   | 7     | COSE_Signature |             | CBOR-encoded   |
+	   | signature |       | / [+           |             | signature      |
+	   |           |       | COSE_Signature |             | structure      |
+	   |           |       | ]              |             |                |
+	   +-----------+-------+----------------+-------------+----------------+
+
+   
+ In greenpass only field "1" and field "4" are present: **Algorithm identifie**r and **KEY identifier** (KID)
+ 
+ Example of decoded protected header:
+ 
+	{
+		4: h'39301768CDDA0513',   
+		1: -7
+	}
+
+Field named "1" represents the used algorithm as per following [table](https://datatracker.ietf.org/doc/html/rfc8152#page-39):
+ 
+		      +-------+-------+---------+------------------+
+		      | Name  | Value | Hash    | Description      |
+		      +-------+-------+---------+------------------+
+		      | ES256 | -7    | SHA-256 | ECDSA w/ SHA-256 |
+		      | ES384 | -35   | SHA-384 | ECDSA w/ SHA-384 |
+		      | ES512 | -36   | SHA-512 | ECDSA w/ SHA-512 |
+		      +-------+-------+---------+------------------+
+
+			      Table 5: ECDSA Algorithm Values
+
+Field named "4" contains the Key Identifier (KID), and index to identify the Signer Certificate to be used to check validity of signature.
+The hexadecimal sequence must be converted to BASE64; the provided example  "39301768CDDA0513" [converts to](https://base64.guru/converter/encode/hex) "OTAXaM3aBRM=", which is the KID for Italian certificate:
+
+	  "IT" : {
+	      "eku" : { },
+	      "keys" : [ {
+		"kty" : "EC",
+		"x5t#S256" : "OTAXaM3aBRO0X4O8aRMXfVP9MIk97f9js1JmAQvwkWo",
+		"crv" : "P-256",
+		"kid" : "OTAXaM3aBRM=",
+		"x5c" : [ "MIIEHjCCAgagAwIBAgIUM5lJeGCHoRF1raR6cbZqDV4vPA8wDQYJKoZIhvcNAQELBQAwTjELMAkGA1UEBhMCSVQxHzAdBgNVBAoMFk1pbmlzdGVybyBkZWxsYSBTYWx1dGUxHjAcBgNVBAMMFUl0YWx5IERHQyBDU0NBIFRFU1QgMTAeFw0yMTA1MDcxNzAyMTZaFw0yMzA1MDgxNzAyMTZaME0xCzAJBgNVBAYTAklUMR8wHQYDVQQKDBZNaW5pc3Rlcm8gZGVsbGEgU2FsdXRlMR0wGwYDVQQDDBRJdGFseSBER0MgRFNDIFRFU1QgMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDSp7t86JxAmjZFobmmu0wkii53snRuwqVWe3/g/wVz9i306XA5iXpHkRPZVUkSZmYhutMDrheg6sfwMRdql3aajgb8wgbwwHwYDVR0jBBgwFoAUS2iy4oMAoxUY87nZRidUqYg9yyMwagYDVR0fBGMwYTBfoF2gW4ZZbGRhcDovL2NhZHMuZGdjLmdvdi5pdC9DTj1JdGFseSUyMERHQyUyMENTQ0ElMjBURVNUJTIwMSxPPU1pbmlzdGVybyUyMGRlbGxhJTIwU2FsdXRlLEM9SVQwHQYDVR0OBBYEFNSEwjzu61pAMqliNhS9vzGJFqFFMA4GA1UdDwEB/wQEAwIHgDANBgkqhkiG9w0BAQsFAAOCAgEAIF74yHgzCGdor5MaqYSvkS5aog5+7u52TGggiPl78QAmIpjPO5qcYpJZVf6AoL4MpveEI/iuCUVQxBzYqlLACjSbZEbtTBPSzuhfvsf9T3MUq5cu10lkHKbFgApUDjrMUnG9SMqmQU2Cv5S4t94ec2iLmokXmhYP/JojRXt1ZMZlsw/8/lRJ8vqPUorJ/fMvOLWDE/fDxNhh3uK5UHBhRXCT8MBep4cgt9cuT9O4w1JcejSr5nsEfeo8u9Pb/h6MnmxpBSq3JbnjONVK5ak7iwCkLr5PMk09ncqG+/8Kq+qTjNC76IetS9ST6bWzTZILX4BD1BL8bHsFGgIeeCO0GqalFZAsbapnaB+36HVUZVDYOoA+VraIWECNxXViikZdjQONaeWDVhCxZ/vBl1/KLAdX3OPxRwl/jHLnaSXeqr/zYf9a8UqFrpadT0tQff/q3yH5hJRJM0P6Yp5CPIEArJRW6ovDBbp3DVF2GyAI1lFA2Trs798NN6qf7SkuySz5HSzm53g6JsLY/HLzdwJPYLObD7U+x37n+DDi4Wa6vM5xdC7FZ5IyWXuT1oAa9yM4h6nW3UvC+wNUusW6adqqtdd4F1gHPjCf5lpW5Ye1bdLUmO7TGlePmbOkzEB08Mlc6atl/vkx/crfl4dq1LZivLgPBwDzE8arIk0f2vCx1+4=" ],
+		"x" : "NKnu3zonECaNkWhuaa7TCSKLneydG7CpVZ7f-D_BXP0",
+		"y" : "i306XA5iXpHkRPZVUkSZmYhutMDrheg6sfwMRdql3aY"
+	      } ]
+	    },
+
+The "x5c" is the certificate, to be enclosed between "-----BEGIN CERTIFICATE-----" and "-----END CERTIFICATE-----" strings.
+
+
+CBOR online decoders
+--------------------
+
+Following sites can be used to decode online CBOR bytes sequence without writing lines of code:
+ - http://cbor.me/
+ - https://hildjj.github.io/node-cbor/example/index-bf.html
+
 
 -------------
 
