@@ -149,7 +149,7 @@ Last element of CBOR array contains the signature of the greenpass; it's made of
 
 - A4EE9016C1A74CCF9CAAB905492D698F6992A8FA30C20DB6180F06040C4870A845BB4B3A1CE3F4ED529CC78E66322547D62637C74AB17919C0AA52A614795E9E 
 
-This is a sequence of alphamumeric couples, each one represeting an hexadecimal number. It should (to be confirmed) represent a signature in P1663 format, which should be converted to DER format to be used in OPENSSL.
+This is a sequence of alphamumeric couples, each one represeting an hexadecimal number. It should (to be confirmed) represent a signature in P1363 format, which should be converted to DER format to be used in OPENSSL.
 
 Splitted:
 
@@ -451,9 +451,11 @@ Basic javascript steps (see source for details):
 
 Useful resources:
 
+- Greenpass (Digital Covid Certificate / DGC) official JSON specification (PDF, v. 1.3.0, june 2021): https://ec.europa.eu/health/sites/default/files/ehealth/docs/covid-certificate_json_specification_en.pdf
 - Original base45 node.js decoder: https://github.com/dirkx/base45-js/blob/main/lib/base45-js.js
 - Zlib unpacker library for browser: https://github.com/nodeca/pako/blob/master/dist/pako.min.js
 - CBOR unpacker: https://github.com/paroga/cbor-js
+- CBOR decoder/viewer online: http://cbor.me/
 - Dummy greenpass for testing: https://gir.st/blog/img/greenpass-demo.png
 - Official data for testing: https://github.com/eu-digital-green-certificates/dgc-testdata/tree/main/IT/png
 - Documentation on json fields: https://ec.europa.eu/health/sites/default/files/ehealth/docs/digital-green-certificates_dt-specifications_en.pdf
