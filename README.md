@@ -180,6 +180,7 @@ According to [RFC8152](https://datatracker.ietf.org/doc/html/rfc8152#section-4.4
  - **sig**: raw greenpass signature hex string representing 64 bytes	
  - **ToBeSigned**: cbor encoding of:
 
+
 	const SigStructure = [
 		'Signature1', // text string
 		p, //    cbor.encode(cbor.decodeFirstSync(protected_header)); /// Decode and re-encode?!? Hence unchanged?
