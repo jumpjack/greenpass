@@ -181,12 +181,13 @@ According to [RFC8152](https://datatracker.ietf.org/doc/html/rfc8152#section-4.4
  - **ToBeSigned**: cbor encoding of:
 
 
-	const SigStructure = [
-		'Signature1', // text string
-		p, //    cbor.encode(cbor.decodeFirstSync(protected_header)); /// Decode and re-encode?!? Hence unchanged?
-		externalAAD, // Always EMPTY_BUFFER in greenpass?
-		plaintext // cbor_data from  [headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);
-	];
+```const SigStructure = [
+'Signature1', // text string
+p, //    cbor.encode(cbor.decodeFirstSync(protected_header)); /// Decode and re-encode?!? Hence unchanged?
+externalAAD, // Always EMPTY_BUFFER in greenpass?
+plaintext // cbor_data from  [headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);
+];
+```
 
 Hence:
 
