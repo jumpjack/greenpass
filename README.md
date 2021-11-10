@@ -8,6 +8,8 @@
  - Qrcode library: https://github.com/klonikar/qrcodejs
  - Test data taken  from: https://github.com/eu-digital-green-certificates/dgc-testdata/tree/main/IT
 
+Note: this app does not work with Dutch greenpass from Holland due to the custom format used, please [see here](https://github.com/jumpjack/greenpass/wiki/Dutch-greenpass-special-format) for details.
+
 --------------------
 
 With this tool you can decode, view and understand all the data actually contained in your greenpass/QR, which are instead not visible using the standard app to check green pass validity, but you can't validate (i.e. verify if QR is valid and legal), this function is not implemented; but the script exposes variables **headers1, headers2, cbor_data,** and  **signature**; greenpass JSON data are in **cbor_data**, the other variables are for validation.
