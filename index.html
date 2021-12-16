@@ -8,8 +8,7 @@
   <body>
 
 <center><big><big>Greenpass pure javascript decoder in browser</big></big><br>
-v. 1.0.0<br>
-Source code: <a href="https://github.com/jumpjack/greenpass">link</a><br>
+v. 1.3.0<br>
 </center><br>
 <br>
 <br>
@@ -23,12 +22,39 @@ Source code: <a href="https://github.com/jumpjack/greenpass">link</a><br>
 Both on smartphone or PC you should get a sequence of characters starting by "HC1:"<br>
 3) Paste the resulting string here below and click  button.<br>
 <br>
-<textarea id="raw" name="raw" cols=150 rows=6>Paste here your QR code</textarea><br>
-<button onclick="controlla()">Check</button><br>
+Raw greenpass string (with or without HC1):<br>
+<textarea id="raw" name="raw" cols=150 rows=3>Paste here your QR code</textarea><br>
+<button onclick="controlla()">Decode</button><br>
 <br>
+Signature:<br>
+<textarea id="txtSignature" name="txtSignature" cols=100 rows=2></textarea><br>
+<b>Protected header</b><br>
+KID text: <span id="spnKid" name="spnKid">---</span><br>
+KID bytes: <span id="spnKidHex" name="spnKidHex">---</span><br>
+Algorithm sign: = <span id="spnAlgSign" name="spnAlgSign">---</span><br>
+Algorithm digest: = <span id="spnAlgDigest" name="spnAlgDigest">---</span><br>
+<br>
+<b>Signature</b><br>
+<pre>
+Raw signature in hex: <span id="hexSignature" name="hexSignature">--</span><br>
+ R: <span id="signR" name="signR">--</span>
+ S: <span id="signS" name="signS">--</span>
+</pre>
+<button id="verif" name="verif">Verify</button><br>
+
+Verification result: <span id="verifResult" name="verifResult">--</span><br><br>
+Certificate:  (paste KID here and click button to load known certificate ---> <input id="txtLoadKid" name = "txtLoadKid" value = "NJpCsMLQco4=" size=10><button id="loadCert" name="loadCert" onclick="loadCertificate()">Load</button> )<br>
+<textarea id="txtCertificate" name="txtCertificate" cols=150 rows=10>
+MIICiTCCAjCgAwIBAgIIPrgTduwYL84wCgYIKoZIzj0EAwIwSjEeMBwGA1UEAwwVUG9sYW5kIERHQyBSb290Q1NDQSAxMRswGQYDVQQKDBJNaW5pc3RyeSBvZiBIZWFsdGgxCzAJBgNVBAYTAlBMMB4XDTIxMDUyNjExNTMxMFoXDTIzMDUyNjExNTMxMFowbjEpMCcGA1UEAwwgUG9sYW5kIFZhY2NpbmF0aW9uIERHQyBTZXJ2aWNlIDExFzAVBgNVBAsMDmVIZWFsdGggQ2VudHJlMRswGQYDVQQKDBJNaW5pc3RyeSBvZiBIZWFsdGgxCzAJBgNVBAYTAlBMMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgUesihG8ECIDnqxEoU9RouOR9y3NVLBUlpZ+ri+Ur7TQLORQDE3s/M5KGEllwCbsgT6cXUAT8kun12mOcJt78qOB2zCB2DAfBgNVHSMEGDAWgBSReaLaaIESwKN0GqS63esPmeyLATAWBgNVHSUEDzANBgsrBgEEAY43j2UBAjBEBgNVHR8EPTA7MDmgN6A1hjNodHRwOi8vcDEuZXpkcm93aWUuZ292LnBsL2NjcDEvY3JsL0RHQ1Jvb3RDU0NBMS5jcmwwHQYDVR0OBBYEFEfkBAHCnTR6Ar66rg0lwacUkD9aMCsGA1UdEAQkMCKADzIwMjEwNTI2MTE1MzEwWoEPMjAyMjA1MjYxMTUzMTBaMAsGA1UdDwQEAwIHgDAKBggqhkjOPQQDAgNHADBEAiBrwE3IHj2Vjq71fA3jNBz/Hso3xXhVtPXa42JcfDJrvgIgLsib0ZAxm3ERXePd4Nlgvt+lISofEHlIi+CEBpJd5sE=
+</textarea><br><br>
+Decode certificate: <button id="btnDecodeCert" name="btnDecodeCert">(please wait...)</button></br>
+<br>
+Certificate info:<br>
+<textarea id="txtCertDecoded" name="txtCertDecoded" cols=180 rows=30></textarea><br>
 <br>
 
-<textarea id="rawjson" name="rawjson" cols=100 rows=35></textarea><br>
+<textarea id="rawjson" name="rawjson" cols=80 rows=35></textarea>
+<textarea id="signatureData" name="signatureData" cols=90 rows=35></textarea><br>
 <br>
 <br>
 
@@ -83,12 +109,31 @@ quindi vale <b><span id="days" name="days"></span></b> giorni
 (<b><span id="months" name="months"></span></b> mesi).<br>
 Alla scadenza mancano <b><span id="daysleft" name="daysleft"></span></b> giorni
 (<b><span id="monthsleft" name="monthsleft"></span></b> mesi).<br>
+<br>
+<hr>
+<big><big>
+
+Certificates lists (unofficial):<br>
+<ul>
+<li> <a href="https://raw.githubusercontent.com/bcsongor/covid-pass-verifier/35336fd3c0ff969b5b4784d7763c64ead6305615/src/data/certificates.json">bcsongor repo</a> (Numerical format)
+<li> <a href="https://github.com/bcsongor/covid-pass-verifier/blob/main/docs/Certificates.md">bcsongor repo</a> (Human readable)
+<li> <a href="https://de.dscg.ubirch.com/trustList/DSC/">https://de.dscg.ubirch.com/trustList/DSC/</a> (Signed?)
+</ul>
+Official list: <a href="https://dgcg.covidbevis.se/tp/">https://dgcg.covidbevis.se/tp/</a></br>
+
+<br>
+
+!--<textarea id="certificates" name="certificates" cols="100" rows="50"></textarea>-->
+
 
 	<!-- https://github.com/klonikar/qrcodejs -->
  	<!-- file a parte -->
 
   <script src="pako.min.js"></script>
 	<!-- https://github.com/nodeca/pako/blob/master/dist/pako.min.js -->
+
+  <script src="zlib_and_gzip.min.js"></script>
+	<!-- https://github.com/imaya/zlib.js/ -->
 
   <script src="my_base45_2.js"></script>
 	<!-- https://github.com/dirkx/base45-js/raw/main/lib/base45-js.js -->
@@ -103,10 +148,310 @@ Alla scadenza mancano <b><span id="daysleft" name="daysleft"></span></b> giorni
 	<script src="test-result.js"></script>
 	<script src="test-manf.js"></script>
 	<script src="test-type.js"></script>
-	<script src=""></script>
-	<script src=""></script>
+	<script src="trustlist.js"></script>
+
+<script type="module">
+  //import coseJs from 'https://cdn.skypack.dev/cose-js';
+//  import cosejs from 'https://unpkg.com/npm/cose-js';
+  //import cosejs from 'https://cdn.jsdelivr.net/npm/cose-js@0.7.0/lib/index.min.js';
+//  console.log(cosejs);
+
+</script>
+
+<!--
+<script src="https://unpkg.com/cose-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cose-js"></script>
+-->
+
+
+ 	<script type="module">
+		import {X509} from 'https://cdn.skypack.dev/jsrsasign';
+		import * as jsrsasign from 'https://cdn.skypack.dev/jsrsasign';
+		var c = new X509();
+		console.log("X509:", c);
+		console.log("jsrsasign=",jsrsasign);
+		btnDecodeCert.innerHTML="Go";
+		let rawCert = txtCertificate.value.replace("-----BEGIN CERTIFICATE-----","");
+		rawCert = rawCert.replace("-----END CERTIFICATE-----","");
+
+		export function parse() {
+			var myCert =rawCert ; // Get input
+			//decoded.value=""; // Clean output
+			console.log("-----BEGIN CERTIFICATE-----" + rawCert + "-----END CERTIFICATE-----");
+			c.readCertPEM("-----BEGIN CERTIFICATE-----" + rawCert + "-----END CERTIFICATE-----"); // Read certificate
+			console.log("Public key :\n", c.getPublicKey());
+			console.log("\n\nCertificate data:\n",c.getInfo());
+         	txtCertDecoded.innerHTML = c.getInfo();
+			let params = c.getParam();
+  			txtCertDecoded.innerHTML  += "\n\nParams:\n" + JSON.stringify(c.getParam(),null,4) + "\n************** \n";;
+ 			txtCertDecoded.innerHTML  += "Issuer: " + params.issuer.str + "\n";
+ 			txtCertDecoded.innerHTML  += "Subject " + params.subject.str + "\n";
+ 			txtCertDecoded.innerHTML  += "Algorithm: " + params.sigalg + "\n";
+
+
+			let pubKey = c.getPublicKey();
+			let pubKeyHex = c.getPublicKeyHex();
+			console.log(pubKey.pubKeyHex);
+			console.log(pubKeyHex);
+			console.log(pubKey.ecparams);
+			txtCertDecoded.innerHTML  += "\n\nPublic key:\n";
+			txtCertDecoded.innerHTML  += "Name: " + pubKey.ecparams.name + "\n";
+			txtCertDecoded.innerHTML  += "Length: " + pubKey.ecparams.keylen + "\n"
+			txtCertDecoded.innerHTML  += "Type: " + pubKey.type + "\n"
+			txtCertDecoded.innerHTML  += "Hex ( c.getPublicKey().pubKeyHex) ( " + pubKey.pubKeyHex.length + " bytes): \n" + pubKey.pubKeyHex + "\n"
+			txtCertDecoded.innerHTML  += "To B64: \n" + jsrsasign.hex2b64(pubKey.pubKeyHex) + "\n"
+			txtCertDecoded.innerHTML  += "Hex2 (c.getPublicKeyHex()) (" + c.getPublicKeyHex().length + " bytes): \n'" + c.getPublicKeyHex() + "\n"
+			txtCertDecoded.innerHTML  += "To B64: \n" + jsrsasign.hex2b64(c.getPublicKeyHex()) + "\n"
+			let BASE64key = params.sbjpubkey;
+			let BASE64key_noCR = BASE64key.split("\r\n").join("");
+			let BASE64key_clean1 = BASE64key_noCR.replace("-----BEGIN PUBLIC KEY-----","");
+			let BASE64key_clean2 = BASE64key_clean1.replace("-----END PUBLIC KEY-----","");
+console.log("===============",BASE64key_clean2);
+ 			txtCertDecoded.innerHTML  += "sbjpubkey one line:\n" + BASE64key_clean2 + "\n";
+ 			txtCertDecoded.innerHTML  += "\n\nsbjpubkey (" + (params.sbjpubkey.length - ("-----BEGIN PUBLIC KEY-----").length - ("-----END PUBLIC KEY-----").length - 4*("\r\n").length)  + " characters):\n" + params.sbjpubkey + "\n";
+//			txtCertDecoded.innerHTML  += "";
+
+
+		}
+
+		document.getElementById("btnDecodeCert").addEventListener("click", () => {parse();});
+	</script>
+
+
+
+
+<script type="module">
+ /* import {X509} from 'https://cdn.skypack.dev/jsrsasign';
+  import * as jsrsasign from 'https://cdn.skypack.dev/jsrsasign';
+  var c = new X509();
+
+var myCert ="-----BEGIN CERTIFICATE-----MIIBIjBNBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoPNkJzHqbY/6mAjJwb4zUbOiOjvmg3b8fvydYdGXdv04r6vzgn/FD5NPJM7bojAxi6sZ8vV+fYVIQey6HnrLSsdU/QXhT3p22a+kB4ym8SbKsOy2fWqL950nZCPYW/DC9txHy+ceFuKMAarFWAMJRe+MaVIbDIAAi8tMNjZ204GkmqveyAeA6JppzthAuiX69H8Zb3Hbs49CHNwLnSpKz5HBTfcgWqHkar2HlEFccvWC++Kq47MIkEcKScS/oneDb/TiL5ClOas1gMxfwiVtkFI6zNxxJOJDSTlY66oHCVCfTruk2pQbtOtwJEGrOwq6B536QL/EkeEKMgiqlpZJbQIDAQAB-----END CERTIFICATE-----";
+var stringToVerify = "aaa";
+var signature = "hXyRmdQOCiVBNgDdGtiWF/gJwIk0Hs+MZtfEU4sFMEu05xsBjR9uymOJ/8FwhKCB0p+Kc1jqtsZxQqtxC0Du2EYyvjs0j5bbU9ZugZw0+9VHqKm0UA23djmZ1MT6nXt2ZEUEsS0La9yrfEnig/swAku1fQorsxG5FK5GFRjaacNIF+O0GOr0cbzEvlaAof6T6JFMueIw/iZykivs8XohSlghdPzoNmVueY9JF1XbtHZayau17jGhFTbeNNxbDBanPo593eZdgi5aTZMYHbxHx87cfU1sE5cjSioPQLsG9cQwVaWrrZa9BnB8IhR8Rv0NdRXYNTcVhc+sVHJN/QghNQ==";
+
+let dummy = c.readCertPEM(myCert);
+var pubKey = c.getPublicKey();
+var signatureNew = jsrsasign.b64tohex(signature); /// ???
+var verifier = new jsrsasign.KJUR.crypto.Signature({alg: "SHA1withRSA", prov: "cryptojs/jsrsa"});
+try {
+    verifier.init(pubKey);
+	try {
+	    verifier.updateString(stringToVerify);
+	} catch (err) {
+		console.log("===============Err verif:", err);
+	}
+	console.log(">>>>>>>>>>>>>Validation result:" ,verifier.verify(signatureNew));
+} catch (err) {
+	console.log("===============Err init:",err);
+}*/
+
+</script>
+
+
+<script type="module">
+
+//esperimenti di decodifica
+
+console.log("keysList=",keysList);
+
+console.log(keysList.dsc_trust_list['IT'].keys[0].x5c);
+  import {X509} from 'https://cdn.skypack.dev/jsrsasign';
+  import * as jsrsasign from 'https://cdn.skypack.dev/jsrsasign';
+console.log("jsrsasign=",jsrsasign);
+  //import jsrsasign from "https://cdn.skypack.dev/jsrsasign";
+  //import cbor from 'https://cdn.skypack.dev/cbor';
+  //import coseJs from 'https://cdn.skypack.dev/cose-js';
+
+
+// Italia:
+//let myCert = keysList.dsc_trust_list['IT'].keys[0].x5c;
+// Leggere i certificati scaricabili da qui (sito ufficiale):  https://get.dgc.gov.it/v1/dgc/signercertificate/update
+
+var c = new X509();
+console.log("X509:", c);
+
+var myCert = "MIIBIjBNBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoPNkJzHqbY/6mAjJwb4zUbOiOjvmg3b8fvydYdGXdv04r6vzgn/FD5NPJM7bojAxi6sZ8vV+fYVIQey6HnrLSsdU/QXhT3p22a+kB4ym8SbKsOy2fWqL950nZCPYW/DC9txHy+ceFuKMAarFWAMJRe+MaVIbDIAAi8tMNjZ204GkmqveyAeA6JppzthAuiX69H8Zb3Hbs49CHNwLnSpKz5HBTfcgWqHkar2HlEFccvWC++Kq47MIkEcKScS/oneDb/TiL5ClOas1gMxfwiVtkFI6zNxxJOJDSTlY66oHCVCfTruk2pQbtOtwJEGrOwq6B536QL/EkeEKMgiqlpZJbQIDAQAB"; // keysList.dsc_trust_list['IT'].keys[0].x5c[0];
+
+// esempio stackoverflow:
+// cert= "MIIBIjBNBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoPNkJzHqbY/6mAjJwb4zUbOiOjvmg3b8fvydYdGXdv04r6vzgn/FD5NPJM7bojAxi6sZ8vV+fYVIQey6HnrLSsdU/QXhT3p22a+kB4ym8SbKsOy2fWqL950nZCPYW/DC9txHy+ceFuKMAarFWAMJRe+MaVIbDIAAi8tMNjZ204GkmqveyAeA6JppzthAuiX69H8Zb3Hbs49CHNwLnSpKz5HBTfcgWqHkar2HlEFccvWC++Kq47MIkEcKScS/oneDb/TiL5ClOas1gMxfwiVtkFI6zNxxJOJDSTlY66oHCVCfTruk2pQbtOtwJEGrOwq6B536QL/EkeEKMgiqlpZJbQIDAQAB"; // keysList.dsc_trust_list['IT'].keys[0].x5c[0];
+// sig ="hXyRmdQOCiVBNgDdGtiWF/gJwIk0Hs+MZtfEU4sFMEu05xsBjR9uymOJ/8FwhKCB0p+Kc1jqtsZxQqtxC0Du2EYyvjs0j5bbU9ZugZw0+9VHqKm0UA23djmZ1MT6nXt2ZEUEsS0La9yrfEnig/swAku1fQorsxG5FK5GFRjaacNIF+O0GOr0cbzEvlaAof6T6JFMueIw/iZykivs8XohSlghdPzoNmVueY9JF1XbtHZayau17jGhFTbeNNxbDBanPo593eZdgi5aTZMYHbxHx87cfU1sE5cjSioPQLsG9cQwVaWrrZa9BnB8IhR8Rv0NdRXYNTcVhc+sVHJN/QghNQ==";
+// msg = "aaa"
+
+// esmpio jsrsasign
+// https://kjur.github.io/jsrsasign/sample/sample-rsasign.html
+/*cert = MIIBvTCCASYCCQD55fNzc0WF7TANBgkqhkiG9w0BAQUFADAjMQswCQYDVQQGEwJK\
+UDEUMBIGA1UEChMLMDAtVEVTVC1SU0EwHhcNMTAwNTI4MDIwODUxWhcNMjAwNTI1\
+MDIwODUxWjAjMQswCQYDVQQGEwJKUDEUMBIGA1UEChMLMDAtVEVTVC1SU0EwgZ8w\
+DQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBANGEYXtfgDRlWUSDn3haY4NVVQiKI9Cz\
+Thoua9+DxJuiseyzmBBe7Roh1RPqdvmtOHmEPbJ+kXZYhbozzPRbFGHCJyBfCLzQ\
+fVos9/qUQ88u83b0SFA2MGmQWQAlRtLy66EkR4rDRwTj2DzR4EEXgEKpIvo8VBs/\
+3+sHLF3ESgAhAgMBAAEwDQYJKoZIhvcNAQEFBQADgYEAEZ6mXFFq3AzfaqWHmCy1\
+ARjlauYAa8ZmUFnLm0emg9dkVBJ63aEqARhtok6bDQDzSJxiLpCEF6G4b/Nv/M/M\
+LyhP+OoOTmETMegAVQMq71choVJyOFE5BtQa6M/lCHEOya5QUfoRF2HF9EjRF44K\
+3OK+u3ivTSj3zwjtpudY5Xo=\
+sig =
+msg = aaa
+
+*/
+
+
+// brandeburg valid ok:
+// org:
+// cert = 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
+// sig = FD376E7D4A5B7132C2F26CC95ECED87ACB2DBB579897253EFC178097193F41C274FFE9B0B64B9EC355B4B3BB54F1C4F9B1151767E29AD913F1FF9B41608BE8D2
+// msg = pAFiREUEGmKPZJsGGmCuMRs5AQOhAaRhdoGqYmNpeC9VUk46VVZDSTowMURFL0laMTQ0ODJBLzJCWVUxVkZFOEwySkRRSkhZMVFWU0sjRWJjb2JERWJkbgJiZHRqMjAyMS0wNS0yNmJpc3RSb2JlcnQgS29jaC1JbnN0aXR1dGJtYW1PUkctMTAwMDMwMjE1Ym1wbEVVLzEvMjAvMTUyOGJzZAJidGdpODQwNTM5MDA2YnZwajExMTkzNDkwMDdjZG9iajE5NTAtMDEtMDFjbmFtpGJmbm9CcmFuZGVuYnVyZ3Rlc3RiZ25lQmVybmRjZm50b0JSQU5ERU5CVVJHVEVTVGNnbnRlQkVSTkRjdmVyZTEuMC4w
+
+
+// certificati:
+// https://dgcg.covidbevis.se/tp/
+
+var myCert = "-----BEGIN CERTIFICATE-----\
+MIICiTCCAjCgAwIBAgIIPrgTduwYL84wCgYIKoZIzj0EAwIwSjEeMBwGA1UEAwwVUG9sYW5kIERHQyBSb290Q1NDQSAxMRswGQYDVQQKDBJNaW5pc3RyeSBvZiBIZWFsdGgxCzAJBgNVBAYTAlBMMB4XDTIxMDUyNjExNTMxMFoXDTIzMDUyNjExNTMxMFowbjEpMCcGA1UEAwwgUG9sYW5kIFZhY2NpbmF0aW9uIERHQyBTZXJ2aWNlIDExFzAVBgNVBAsMDmVIZWFsdGggQ2VudHJlMRswGQYDVQQKDBJNaW5pc3RyeSBvZiBIZWFsdGgxCzAJBgNVBAYTAlBMMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgUesihG8ECIDnqxEoU9RouOR9y3NVLBUlpZ+ri+Ur7TQLORQDE3s/M5KGEllwCbsgT6cXUAT8kun12mOcJt78qOB2zCB2DAfBgNVHSMEGDAWgBSReaLaaIESwKN0GqS63esPmeyLATAWBgNVHSUEDzANBgsrBgEEAY43j2UBAjBEBgNVHR8EPTA7MDmgN6A1hjNodHRwOi8vcDEuZXpkcm93aWUuZ292LnBsL2NjcDEvY3JsL0RHQ1Jvb3RDU0NBMS5jcmwwHQYDVR0OBBYEFEfkBAHCnTR6Ar66rg0lwacUkD9aMCsGA1UdEAQkMCKADzIwMjEwNTI2MTE1MzEwWoEPMjAyMjA1MjYxMTUzMTBaMAsGA1UdDwQEAwIHgDAKBggqhkjOPQQDAgNHADBEAiBrwE3IHj2Vjq71fA3jNBz/Hso3xXhVtPXa42JcfDJrvgIgLsib0ZAxm3ERXePd4Nlgvt+lISofEHlIi+CEBpJd5sE=\
+-----END CERTIFICATE-----\
+";
+//console.log(myCert);
+var stringToVerify = "pAFiREUEGmKPZJsGGmCuMRs5AQOhAaRhdoGqYmNpeC9VUk46VVZDSTowMURFL0laMTQ0ODJBLzJCWVUxVkZFOEwySkRRSkhZMVFWU0sjRWJjb2JERWJkbgJiZHRqMjAyMS0wNS0yNmJpc3RSb2JlcnQgS29jaC1JbnN0aXR1dGJtYW1PUkctMTAwMDMwMjE1Ym1wbEVVLzEvMjAvMTUyOGJzZAJidGdpODQwNTM5MDA2YnZwajExMTkzNDkwMDdjZG9iajE5NTAtMDEtMDFjbmFtpGJmbm9CcmFuZGVuYnVyZ3Rlc3RiZ25lQmVybmRjZm50b0JSQU5ERU5CVVJHVEVTVGNnbnRlQkVSTkRjdmVyZTEuMC4w";
+let dummy = c.readCertPEM("-----BEGIN CERTIFICATE-----" + myCert + "-----END CERTIFICATE-----"); // Read certificate but put it into "c"
+var signature = "FD376E7D4A5B7132C2F26CC95ECED87ACB2DBB579897253EFC178097193F41C274FFE9B0B64B9EC355B4B3BB54F1C4F9B1151767E29AD913F1FF9B41608BE8D2"
+
+var sig64 = jsrsasign.hextob64u(signature);
+
+var pubKey = c.getPublicKey();
+var hSerial    = c.getSerialNumberHex(); // '009e755e" hexadecimal string
+var sIssuer    = c.getIssuerString();    // '/C=US/O=z2'
+var sSubject   = c.getSubjectString();   // '/C=US/O=z2'
+var sNotBefore = c.getNotBefore();       // '100513235959Z'
+var sNotAfter  = c.getNotAfter();        // '200513235959Z'
+
+
+var verifier = new jsrsasign.KJUR.crypto.Signature({alg: "SHA1withRSA", prov: "cryptojs/jsrsa"});
+try {
+    verifier.init(pubKey);
+	try {
+	    verifier.updateString(stringToVerify);
+	} catch (err) {
+		console.log("===============Err verif:", err);
+	}
+	console.log(">>>>>>>>>>>>>Validation result:" ,verifier.verify(sig64));
+} catch (err) {
+	console.log("===============Err init:",err);
+}
+
+
+/*
+https://github.com/kjur/jsrsasign/wiki/Tutorial-for-parsing-X.509-certificate
+-----BEGIN CERTIFICATE-----
+MIICYTCCAUmgAwIBAgIBAjANBgkqhkiG9w0BAQsFADASMRAwDgYDVQQDDAdSb290
+IENBMCAXDTE3MDExMjE0NDUwMVoYDzIxMTcwMTEzMTQ0NTAxWjAcMRowGAYDVQQD
+DBFTZXJ2ZXIgRUNEU0EgY2VydDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABOI7
+NNxE483tJyIKT6KOQM5Zlfrigh12BEcHxnzpudgVHYA4aL5D5JulYGFzL0LQ5Q55
+GpCub1V2j+AhyBMKPQqjgYAwfjAdBgNVHQ4EFgQUSDzlr0Ayx22BljPtY6YRLTes
+qgwwHwYDVR0jBBgwFoAUcH8uroNoWZgEIyrN6z4XzSTdAUkwCQYDVR0TBAIwADAT
+BgNVHSUEDDAKBggrBgEFBQcDATAcBgNVHREEFTATghFTZXJ2ZXIgRUNEU0EgY2Vy
+dDANBgkqhkiG9w0BAQsFAAOCAQEAOJDgr1hRNuxW1D93yDWFwP1o2KuaI0BMZVFS
+6rzzLThCo3FeS6X7DCrBP699PCYcKeyMDmQwg9mVMABSZzox2GBO3hoqtnUXjsK3
+Qxh+4O5EmIXX4v8szdSBP14O2c5krAk4lbVWxLHE78NAc8dL94VORndyTcmaXUTn
+FQeBaRJjXto3okPvwYlczPS9sq0AhuBh5hwsLOYwpLf6/loPLjl40iwPQ+iqQ1EV
+m0Sac3o+0qI0cKiz4nXgd4NkFvV3G8lwd0Um8KSS/EFuZbgJNKKD6+1+90sibM4a
+Y/JiO6weK/VTlqCLn7zV9LcDT4gU18UCn85UV1XlVYKXZlaXYQ==
+-----END CERTIFICATE-----
+To get basic fields of the certificate:
+
+var c = new X509();
+c.readCertPEM("-----BEGIN CERTIFICATE(snip)...");
+var hSerial    = c.getSerialNumberHex(); // '009e755e" hexadecimal string
+var sIssuer    = c.getIssuerString();    // '/C=US/O=z2'
+var sSubject   = c.getSubjectString();   // '/C=US/O=z2'
+var sNotBefore = c.getNotBefore();       // '100513235959Z'
+var sNotAfter  = c.getNotAfter();        // '200513235959Z'
+To get subject public key as RSAKey object:
+
+var c = new X509();
+c.readCertPEM("-----BEGIN CERTIFICATE(snip)...");
+var pubKey = c.subjectPublicKeyRSA;  // public key as RSAKey object
+*/
+</script>
+
+
+
+
+
+
+
+
 
 <script>
+
+// Versions:
+// 1.3.0: Replaced pako.js library by zlib.js library ( https://github.com/imaya/zlib.js/ )
+// 1.2.0: Added signature data printing and many experiments not visibile to final user (see console)
+// 1.1.0: Added KID decoding and printing
+// 1.0.0: First public version
+
+
+initCertificates();
+
+function initCertificates() {
+	allCerts = [];
+	allNations = Object.values(keysList.dsc_trust_list);
+	for (var i = 0; i < allNations.length; i++) {
+		for (var certIndex = 0; certIndex < allNations[i].keys.length; certIndex++) {
+			allCerts[allNations[i].keys[certIndex].kid] = {
+			"x5c" : allNations[i].keys[certIndex].x5c[0],
+			"crv" : allNations[i].keys[certIndex].crv,
+			"kty" :  allNations[i].keys[certIndex].kty,
+			x : allNations[i].keys[certIndex].x,
+			y : allNations[i].keys[certIndex].y,
+			x5t_S256 : allNations[i].keys[certIndex]["x5t#256"]
+			};
+		}
+	}
+	console.log(allCerts);
+	loadCertificate();
+}
+
+
+function loadCertificate() {
+	loadKid = txtLoadKid.value;
+console.log(loadKid);
+	try {
+		certContainer = allCerts[loadKid];
+		txtCertificate.value = certContainer.x5c;
+	} catch (error) {
+  txtCertificate.value = "No certificate found for KID " + loadKid;
+	}
+}
+
+function kidDecoder(kid) {
+ //   	kidReduced = kid.reduce ( (str, v) => str + String.fromCharCode(v), "")
+	try {
+		reducer = (str, v) =>	 str + String.fromCharCode(v)
+
+   	kidReduced = kid.reduce ( reducer , "")
+		kidFinal = btoa(kidReduced);
+		console.log("KID source:",  kid);
+		console.log("kidReduced:",  kidReduced);
+		console.log("KID result:",  kidFinal);
+		return kidFinal;
+	} catch (error) {
+		console.log("Error in decoding kid:", error);
+		console.log("String to decode: '" + kid + "'");
+		return "KID error";
+	}
+
+}
+
+const AlgFromTags = {};
+AlgFromTags[-7] = { 'sign': 'ES256', 'digest': 'SHA-256' };
+AlgFromTags[-35] = { 'sign': 'ES384', 'digest': 'SHA-384' };
+AlgFromTags[-36] = { 'sign': 'ES512', 'digest': 'SHA-512' };
+AlgFromTags[-37] = { 'sign': 'PS256', 'digest': 'SHA-256' };
+AlgFromTags[-38] = { 'sign': 'PS384', 'digest': 'SHA-384' };
+AlgFromTags[-39] = { 'sign': 'PS512', 'digest': 'SHA-512' };
+AlgFromTags[-257] = { 'sign': 'RS256', 'digest': 'SHA-256' };
+AlgFromTags[-258] = { 'sign': 'RS384', 'digest': 'SHA-384' };
+AlgFromTags[-259] = { 'sign': 'RS512', 'digest': 'SHA-512' };
+
 testData = {
   "JSON" : {
     "ver" : "1.0.0",
@@ -135,7 +480,39 @@ testData = {
   "COMPRESSED" : "789cbbd4e2bb88c5c3d2403ce3ec2d566146b505918c8c4b58a412a7bc98c12695b0bca78331c933c492917921e392c4b2c6554929794c49b989b9fe41eeba86060606c6064686a64965055986868696c626960606e6492925594640615d0313a092a4e47ca00149c999156a06869e21aee6c60606ae868e4e468e1626cee686400d266e8606c62ece4e866ee6068eca6649b90539aea1fa86fa4606fa86a646164999c520038a5398924ad2332d4c0c4c8d819acc92f312739724a7e59564ba78da383b060479fa27a5e565ba642a3827161465e627a7e795e4fa3a0679fa84da84b806b9063b26a5e7e5f9261665e61cdea910925a945a9c985c06a40cf50cf40c9253f293b20c2dcdcd750dcc740dcd221c96bc9b207670b9cff939ab76b27aea66f6674e5af1cbe010ef36097e36161e8f8215aebbbdad641e7f791b34e7785f9a91aafb3535f3e35e1b2b250fac0a5a265219370f006c9472ca",
   "BASE45" : "6BFOXN%TS3DH0YOJ58S S-W5HDC *M0II5XHC9B5G2+$N IOP-IA%NFQGRJPC%OQHIZC4.OI1RM8ZA.A5:S9MKN4NN3F85QNCY0O%0VZ001HOC9JU0D0HT0HB2PL/IB*09B9LW4T*8+DCMH0LDK2%K:XFE70*LP$V25$0Q:J:4MO1P0%0L0HD+9E/HY+4J6TH48S%4K.GJ2PT3QY:GQ3TE2I+-CPHN6D7LLK*2HG%89UV-0LZ 2ZJJ524-LH/CJTK96L6SR9MU9DHGZ%P WUQRENS431T1XCNCF+47AY0-IFO0500TGPN8F5G.41Q2E4T8ALW.INSV$ 07UV5SR+BNQHNML7 /KD3TU 4V*CAT3ZGLQMI/XI%ZJNSBBXK2:UG%UJMI:TU+MMPZ5$/PMX19UE:-PSR3/$NU44CBE6DQ3D7B0FBOFX0DV2DGMB$YPF62I$60/F$Z2I6IFX21XNI-LM%3/DF/U6Z9FEOJVRLVW6K$UG+BKK57:1+D10%4K83F+1VWD1NE",
   "PREFIX" : "HC1:6BFOXN%TS3DH0YOJ58S S-W5HDC *M0II5XHC9B5G2+$N IOP-IA%NFQGRJPC%OQHIZC4.OI1RM8ZA.A5:S9MKN4NN3F85QNCY0O%0VZ001HOC9JU0D0HT0HB2PL/IB*09B9LW4T*8+DCMH0LDK2%K:XFE70*LP$V25$0Q:J:4MO1P0%0L0HD+9E/HY+4J6TH48S%4K.GJ2PT3QY:GQ3TE2I+-CPHN6D7LLK*2HG%89UV-0LZ 2ZJJ524-LH/CJTK96L6SR9MU9DHGZ%P WUQRENS431T1XCNCF+47AY0-IFO0500TGPN8F5G.41Q2E4T8ALW.INSV$ 07UV5SR+BNQHNML7 /KD3TU 4V*CAT3ZGLQMI/XI%ZJNSBBXK2:UG%UJMI:TU+MMPZ5$/PMX19UE:-PSR3/$NU44CBE6DQ3D7B0FBOFX0DV2DGMB$YPF62I$60/F$Z2I6IFX21XNI-LM%3/DF/U6Z9FEOJVRLVW6K$UG+BKK57:1+D10%4K83F+1VWD1NE",
-}
+};
+
+
+newData = {
+  "JSON" : {
+    "ver" : "",
+    "nam" : {
+      "fn" : "",
+      "fnt" : "",
+      "gn" : "",
+      "gnt" : ""
+    },
+    "dob" : "",
+    "v" : [ {
+      "tg" : "",
+      "vp" : "",
+      "mp" : "",
+      "ma" : "",
+      "dn" : null,
+      "sd" : null,
+      "dt" : "",
+      "co" : "",
+      "is" : "",
+      "ci" : "",
+    } ]
+  },
+  "CBOR" : "",
+  "COSE" : "",
+  "COMPRESSED" : "",
+  "BASE45" : "",
+  "PREFIX" : "",
+};
+
 
 
 // Explanation: https://ec.europa.eu/health/sites/default/files/ehealth/docs/digital-green-certificates_dt-specifications_en.pdf
@@ -237,6 +614,7 @@ function typedArrayToBuffer(array) {
 
 function controlla() {
 
+	rawjson.innerHTML = "Please wait...";
 	list=Object.values(manufacturer)[2]; // Extract actual list  from file
 	manufacturersValues=Object.values(list); // extract values
 	manufacturersKeys=Object.keys(list); // extract keys
@@ -277,44 +655,155 @@ function controlla() {
  // Process:
  // QR Image --> HC1 string --> BASE45 string --> ZIP array --> COSE array --> CBOR array --> json object
 
+console.log("RAW QRCODE=",raw.value.toUpperCase());
   BASE45 = raw.value.replace("HC1:","");
-  //console.log("BASE45=",BASE45);
+  newData.PREFIX=raw.value.toUpperCase();
+  newData.BASE45=BASE45;
+console.log("BASE45=",BASE45);
 
   // Decode BASE45:
-  COMPRESSED = decode(BASE45).raw; // debug oppure raw?
+	try {
+  	COMPRESSED = decode(BASE45).raw;
+	newData.COMPRESSED = COMPRESSED;
+	} catch (error) {
+		console.log("==========ERROR in decoding BASE45", error);
+		rawjson.innerHTML = "BASE45 error: " + error;
+	}
+//console.log("Base 45 decoded (=zipped string):", COMPRESSED);
+console.log("Base 45 decoded (=zipped string) in hex:", buf2hex(COMPRESSED).toUpperCase());
 
-  // Unzip the COMPRESSED:
-  COSEbin =  pako.inflate(COMPRESSED);
-  //console.log("UNZ:",COSEbin);
+	// Zlib magic headers:
+	// 78 01 - No Compression/low
+	// 78 9C - Default Compression
+	// 78 DA - Best Compression
+	if (COMPRESSED[0] == 0x78) {
+	  // Unzip the COMPRESSED:
+	  try {
+	  	//COSEbin =  pako.inflate(COMPRESSED);
+console.log("Inflating (decompressing)...");
+			var inflate = new Zlib.Inflate(COMPRESSED);
+			COSEbin = inflate.decompress();
+console.log("Success.");
+//console.log("UNCOMPRESSED1: ", buf2hex(COSEbin).toUpperCase());
+console.log("UNCOMPRESSED2: ", buf2hex(COSEbin).toUpperCase());
+//console.log("UNCOMPRESSED binary:",COSEbin);
+	  } catch (error) {
+			console.log("======= ERROR ======== Cannot unzip this:", buf2hex(COMPRESSED));
+			console.log("Error is: ", error);
+			console.log("Processing without decompressing...");
+		    COSEbin = COMPRESSED; // debug
+		    rawjson.value += "Error while unzipping: '" + error + "'";
+			throw new Error("Wrong zip");
+	  }
+	} else {
+		console.log("========= WARNING, stream is not properly compressed. Proceeding anyway...");
+		COSEbin = COMPRESSED; //Actually it is NOT compressed, so skip unzipping
+	}
 
-	COSE = buf2hex(COSEbin);
-  console.log("UNZ:",COSE);
+	try {
+		COSE = buf2hex(COSEbin).toUpperCase();
+		newData.COSE = COSE;
+		console.log("UNCOMPRESSED2: ", COSE);
+		try {
+			typedArray = new Uint8Array(COSE.match(/[\da-f]{2}/gi).map(function (h) {  return parseInt(h, 16)}))
+//			console.log("Typed array:", typedArray);
+//			console.log("Typed array HEX:", buf2hex(typedArray));
+				// https://stackoverflow.com/questions/43131242/how-to-convert-a-hexadecimal-string-of-data-to-an-arraybuffer-in-javascript
+		} catch (error) {
+			console.log("Error typedArray from COSE:" , error)
+            typedArray = COSEbin; // debug
+		}
+	} catch (error) {
+		console.log("Error COSE = buf2hex(COSEbin)", error);
+		COSE = COSEbin; //debug
+	}
 
-	//console.log("Input:", raw.innerHTML.length);
-	//console.log("Test:", testData.COSE.length);
-	var typedArray = new Uint8Array(COSE.match(/[\da-f]{2}/gi).map(function (h) {
-	  return parseInt(h, 16)
-	})) // https://stackoverflow.com/questions/43131242/how-to-convert-a-hexadecimal-string-of-data-to-an-arraybuffer-in-javascript
-	var unzipped = typedArray.buffer;
-	//console.log("unzipped=",unzipped) ;
+	unzipped = typedArray.buffer;
+	//console.log("Unzipped=",unzipped);
+	//console.log("Unzipped HEX:", buf2hex(unzipped).toUpperCase());
 
-	[headers1, headers2, cbor_data, signature] = CBOR.decode(unzipped);
-	//console.log("cbor_data=",cbor_data) ;
+	try {
+		[protected_header, unprotected_header, cbor_data, signature] = CBOR.decode(unzipped);
+		appoggio = [protected_header, unprotected_header, cbor_data, signature];
+		//console.log("protected_header=",protected_header) ;
+		//console.log("unprotected_header=",unprotected_header) ;
+		//console.log("cbor_data=",cbor_data) ;
+		//console.log("signature=",signature) ;
+		hexSignature.innerHTML = buf2hex(signature);
+		signRval = buf2hex(signature).substring(0,64);
+		signSval = buf2hex(signature).substring(64,128);
+		signR.innerHTML =  signRval;
+		signS.innerHTML =  signSval;
+	} catch (error) {
+		console.log("============ ERROR in final CBOR decoding:", error);
+		rawjson.value="============ ERROR in final CBOR decoding: "+ error;
+		throw(error);
+	}
 
-	//cbor_dataStr =  buf2hex(cbor_data);
-	//console.log("decodedStr=",decodedStr);
-	//cbor_dataArr=hexStringToArrayBuffer(cbor_dataStr);
+
+//////////////////
 	cbor_dataArr = typedArrayToBuffer(cbor_data);
-	//console.log("cbor_dataArr=",cbor_dataArr);
-
 	greenpassData  = CBOR.decode(cbor_dataArr);
+/////////////////
+
+	console.log("cbor_data:",cbor_data);
+	console.log("cbor_dataHex:",buf2hex(cbor_data));
+	console.log("cbor_dataArr:",cbor_dataArr);
+	console.log("cbor_dataArr:",buf2hex(cbor_dataArr));
+
+
+	protected_headerArr = typedArrayToBuffer(protected_header);
+ 	protected_headerData = CBOR.decode(protected_headerArr);
+	console.log("protected_header array:", protected_headerData);
+	kid  = protected_headerData['4'];
+	if (kid !== undefined) {
+		kidDecoded = kidDecoder(kid);
+		kidHex = buf2hex(kid);
+		algorithmCode = protected_headerData['1'];
+		algorithmObj = AlgFromTags[algorithmCode];
+		algorithmSign = algorithmObj.sign;
+		algorithmDigest = algorithmObj.digest;
+		//sig1 = typedArrayToBuffer(signature);
+		//sig2 = signature.buffer;
+		// https://github.com/floysh/DCC-green-pass-decoder/blob/99344251c7eb9b37103352ae5341c9ad256211f6/src/source.js#L229
+	} else {
+    kidDecoded = "WARNING! This certificate is invalid because is not signed. Possible fraud detected. Data of " + greenpassData[-260][1].nam.gn + " " + greenpassData[-260][1].nam.fn + " have been sent to FBI.";
+		alert(kidDecoded);
+    kidHex = "CAUGHTYOU";
+		algorithmCode = "666";
+		algorithmObj = {};
+		algorithmSign = "666";
+		algorithmDigest = "666";
+	}
+
+		spnKid.innerHTML = kidDecoded;
+		spnKidHex.innerHTML = kidHex;
+		txtLoadKid.value = kidDecoded;
+		loadCertificate();
+		spnAlgSign.innerHTML =  algorithmSign ;
+		spnAlgDigest.innerHTML =  algorithmDigest;
+
+		signatureData.value += "Header:\nKID (text):" + kidDecoded + "\n";
+		signatureData.value += "KID (hex):" +  kidHex + "\n";
+		signatureData.value += "Algorithm code:" + algorithmCode + "\n";;
+//		signatureData.value += "Algorithm obj:" + JSON.stringify(algorithmObj,null,4) + "\n";
+		signatureData.value += "Algorithm sign:" + algorithmSign + "\n";
+		signatureData.value += "Algorithm digest:" +algorithmDigest + "\n";
+		signatureData.value += "\n\nSignature:\n";
+		signatureData.value += "Decimal array:\n" +signature + "\n";
+		signatureData.value += "Hex string:\n" + buf2hex(signature) + "\n";
+		signatureData.value += "R:" + signRval + "\n";
+		signatureData.value += "S:" + signSval + "\n";
+
+
+
 	qrdays = ((greenpassData[4]*1000 - greenpassData[6]*1000)/86400000).toFixed(0);
 	qrmonths = ((greenpassData[4]*1000 - greenpassData[6]*1000)/2592000000).toFixed(0);
 	qrCreation = new Date(greenpassData[6]*1000).toLocaleString();
 	qrExpiration = new Date(greenpassData[4]*1000).toLocaleString();
-	console.log("greenpassData =",greenpassData  );
+	console.log("greenpassData =",greenpassData);
 
-	rawjson.innerHTML = JSON.stringify(greenpassData, null, "\t");;
+	rawjson.value = JSON.stringify(greenpassData, null, "\t");;
 
 	firstname.innerHTML =  "-";
 	surname.innerHTML =    "-";
@@ -467,7 +956,48 @@ try {
 
 }
 
-raw.innerHTML = testData.BASE45;
+raw.innerHTML = testData.PREFIX;
 </script>
+
+<script type="module">
+  import {X509} from 'https://cdn.skypack.dev/jsrsasign';
+  import * as jsrsasign from 'https://cdn.skypack.dev/jsrsasign';
+
+var c2 = new X509();
+console.log("X509_2:", c2);
+
+function HexToASN1(valore) {
+	return     jsrsasign.KJUR.crypto.ECDSA.concatSigToASN1Sig(valore);
+}
+
+function checkSign() {
+// test signature //
+	console.log("Converto signature:\n" , hexSignature.innerHTML);
+txtSignature.value = jsrsasign.hex2b64(hexSignature.innerHTML);
+
+	let concatSig =  hexSignature.innerHTML; // Concatenated R-S values in hex format
+    let ASN1 = HexToASN1(concatSig);
+	console.log("ASN1 sig:\n",ASN1);
+	let sigHex = ASN1; // forse  DEBUG
+
+	console.log("Certificate:\n",txtCertificate.value);
+	c2.readCertPEM("-----BEGIN CERTIFICATE-----" + txtCertificate.value + "-----END CERTIFICATE-----");
+	let pubkeyHex = c2.getPublicKey();
+	// verifyHex(hashHex, sigHex, pubkeyHex)
+
+
+let sig = new jsrsasign.KJUR.crypto.Signature({"alg": "SHA256withECDSA"});
+sig.init("-----BEGIN CERTIFICATE-----" + txtCertificate.value + "-----END CERTIFICATE-----");
+sig.updateString(COSEbin);
+var isValid = sig.verify(sigHex);
+verifResult.innerHTML = isValid;
+console.log("isvalid=",isValid);
+
+}
+
+document.getElementById("verif").addEventListener("click", () => {checkSign();});
+
+</script>
+
   </body>
 </html>
