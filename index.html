@@ -8,7 +8,7 @@
   <body>
 
 <center><big><big>Greenpass pure javascript decoder in browser</big></big><br>
-v. 1.3.0<br>
+v. 1.4.0<br>
 </center><br>
 <br>
 <br>
@@ -383,6 +383,7 @@ var pubKey = c.subjectPublicKeyRSA;  // public key as RSAKey object
 <script>
 
 // Versions:
+// 1.4.0: Fixed to look for KID also in unprotected header
 // 1.3.0: Replaced pako.js library by zlib.js library ( https://github.com/imaya/zlib.js/ )
 // 1.2.0: Added signature data printing and many experiments not visibile to final user (see console)
 // 1.1.0: Added KID decoding and printing
@@ -458,7 +459,7 @@ testData = {
     "nam" : {
       "fn" : "Di Caprio",
       "fnt" : "DI<CAPRIO",
-      "gn" : "Marilù Teresa",
+      "gn" : "MarilÃ¹ Teresa",
       "gnt" : "MARILU<TERESA"
     },
     "dob" : "1977-06-16",
@@ -551,7 +552,7 @@ fieldsDescriptions =
 						'r': [
 									{
 										'tg': 'Targeted disease', 		// Targeted disease (COVID-19 = 840539006), see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/disease-agent-targeted.json
-										'fr': 'Date of first test', // Date of the holder’s first positive NAAT test result. YYYY-MM-DD (complete date without time).
+										'fr': 'Date of first test', // Date of the holderÂ’s first positive NAAT test result. YYYY-MM-DD (complete date without time).
 										'co': 'Country', // Member State or third country in which test was carried out, see https://github.com/ehn-dcc-development/ehn-dcc-schema/raw/release/1.3.0/valuesets/country-2-codes.json
 										'is': 'Certificate issuer', // Certificate issuer (plain text)
 										'df': 'Valid from', // Certificate valid from YYYY-MM-DD (complete date without time).
@@ -749,14 +750,21 @@ console.log("UNCOMPRESSED2: ", buf2hex(COSEbin).toUpperCase());
 	console.log("cbor_data:",cbor_data);
 	console.log("cbor_dataHex:",buf2hex(cbor_data));
 	console.log("cbor_dataArr:",cbor_dataArr);
-	console.log("cbor_dataArr:",buf2hex(cbor_dataArr));
+	//console.log("cbor_dataArr:",buf2hex(cbor_dataArr));
 
 
+	// KID in protected header: protected_header array: Object { 1: -7, 4: Uint8Array(8) }
+	console.log("protected_header raw:", protected_header);
 	protected_headerArr = typedArrayToBuffer(protected_header);
  	protected_headerData = CBOR.decode(protected_headerArr);
 	console.log("protected_header array:", protected_headerData);
+
+	// KID in unprotected header: unprotected_header raw: Object { 4: Uint8Array(8) }
+	console.log("unprotected_header raw:", unprotected_header);
+
 	kid  = protected_headerData['4'];
 	if (kid !== undefined) {
+console.log("=== INFO: KID found in protected header");		
 		kidDecoded = kidDecoder(kid);
 		kidHex = buf2hex(kid);
 		algorithmCode = protected_headerData['1'];
@@ -767,13 +775,26 @@ console.log("UNCOMPRESSED2: ", buf2hex(COSEbin).toUpperCase());
 		//sig2 = signature.buffer;
 		// https://github.com/floysh/DCC-green-pass-decoder/blob/99344251c7eb9b37103352ae5341c9ad256211f6/src/source.js#L229
 	} else {
-    kidDecoded = "WARNING! This certificate is invalid because is not signed. Possible fraud detected. Data of " + greenpassData[-260][1].nam.gn + " " + greenpassData[-260][1].nam.fn + " have been sent to FBI.";
-		alert(kidDecoded);
-    kidHex = "CAUGHTYOU";
-		algorithmCode = "666";
-		algorithmObj = {};
-		algorithmSign = "666";
-		algorithmDigest = "666";
+		kid  = unprotected_header['4'];
+		if (kid != undefined) { // If no KID in protected header neither in unproptected header, then this is a fake greenpass, not signed properly
+console.log("=== INFO: KID found in UNprotected header");		
+			kidDecoded = kidDecoder(kid);
+			kidHex = buf2hex(kid);
+			algorithmCode = protected_headerData['1'];
+			algorithmObj = AlgFromTags[algorithmCode];
+			algorithmSign = algorithmObj.sign;
+			algorithmDigest = algorithmObj.digest;
+		} else {
+console.log("*** ERROR: No KID found!");		
+			kidDecoded = "WARNING! This certificate is invalid because is not signed. Possible fraud detected. Data of " + greenpassData[-260][1].nam.gn + " " + greenpassData[-260][1].nam.fn + " have been sent to FBI.";
+			// Only developers know this is not true. F*ck novax.
+			alert(kidDecoded);
+			kidHex = "CAUGHTYOU";
+			algorithmCode = "666";
+			algorithmObj = {};
+			algorithmSign = "666";
+			algorithmDigest = "666";
+		}
 	}
 
 		spnKid.innerHTML = kidDecoded;
